@@ -38,6 +38,23 @@ s3_onprem_ai_assistant/
 
 ---
 
+## 🧰 Prerequisites
+
+Before you begin:
+
+1. **Install Python 3.12+**
+   > https://www.python.org/downloads/
+
+2. **Install Ollama**
+   ```bash
+   curl -fsSL https://ollama.com/install.sh | sh
+
+3. Pull the Mistral model
+
+ollama run mistral
+
+> Leave Ollama running in the background or use ollama serve.
+
 ## 🚀 Quickstart
 
 ### 1. 🔧 Install dependencies

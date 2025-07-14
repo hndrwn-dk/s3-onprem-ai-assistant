@@ -15,7 +15,7 @@ st.set_page_config(page_title="S3 On-Prem AI Assistant", layout="wide")
 st.title("S3 On-Prem AI Assistant")
 st.caption("Ask a question about your S3 system:")
 
-query = st.text_input("", placeholder="e.g. what's bucket name for pc code 670X")
+query = st.text_input("", placeholder="e.g. what's bucket name for finance dept")
 
 if st.button("Submit") and query:
     try:

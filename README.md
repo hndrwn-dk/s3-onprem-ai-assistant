@@ -1,100 +1,123 @@
-# S3 On-Prem AI Assistant (v1.4)
+# 🧠 S3 On-Prem AI Assistant
 
-This is an **offline AI assistant** tailored for on-premise S3-compatible platforms (e.g. Cloudian, IBM Object Storage, MinIO, PureBlade, Huawei OceanStor S3).
+[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
+[![LangChain](https://img.shields.io/badge/LangChain-0.2+-green.svg)](https://python.langchain.com/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-App-red)](https://streamlit.io/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-It uses:
-- Local documents (`.txt`, `.pdf`, `.json`, `.md`) inside the `docs/` folder
-- FAISS for fast vector-based search
-- Optional JSON fallback search (for bucket metadata)
-- Local LLM via `ollama run mistral`
+A powerful, **offline-ready AI assistant** for answering operational, admin, and troubleshooting questions for **S3-compatible On-Prem platforms** such as:
+
+- 📦 Cloudian HyperStore
+- 🏢 IBM Cloud Object Storage
+- ⚡ Pure FlashBlade
+- 🧊 Huawei OceanStor
+- 🐳 MinIO and others
+
+It supports both **vector search** on `.txt/.pdf`/`.md` docs and **structured lookups** on flattened `.json` metadata.
 
 ---
 
-## Folder Structure
+## 📁 Project Structure
 
-
+```bash
 s3_onprem_ai_assistant/
-│
-├── build_embeddings_all.py      # Build embeddings from docs (vector + pickle)
-├── convert_all_pdfs.py          # Convert PDF → TXT
-├── watch_folder.py              # Auto-scan folder for new PDFs
-├── s3ai_query.py                # CLI query tool
-├── streamlit_ui.py              # Main Streamlit UI
-├── utils.py                     # Shared helper functions
-├── requirements.txt             # Python packages
-├── README.md
-│
-├── docs/                        # Documentation sources
-│   ├── Cloudian Admin Guide_v-8.2.pdf
-│   ├── Cloudian Admin Guide_v-8.2.txt
+├── docs/                           # All input files (.txt/.pdf/.json)
 │   ├── sample_bucket_metadata.json
-│   └── ...
-│
-├── s3_docs_index/               # FAISS vector index
-│   └── index.faiss
-│
-├── s3_docs_chunks.pkl           # Original content chunks
-├── recent_questions.txt         # Past user queries
-
+│   ├── bucket_metadata_flattened.txt
+│   └── *.txt / *.pdf files
+├── s3ai_query.py                  # CLI tool to query docs + metadata
+├── streamlit_ui.py                # Web UI for the assistant
+├── build_embeddings_all.py        # Indexes all documents to FAISS
+├── convert_json_to_txt.py         # Converts JSON to readable .txt
+├── flatten_json_to_txt.py         # Flattens structured JSON metadata
+├── watch_folder.py                # Watches `docs/` for new files
+├── utils.py                       # Shared utility functions
+├── requirements.txt               # Python dependencies
+└── README.md                      # This file
+```
 
 ---
 
-## How to Use
+## 🚀 Quickstart
 
-### 1. Install Requirements
+### 1. 🔧 Install dependencies
 
+```bash
 pip install -r requirements.txt
+```
 
+### 2. 📚 Prepare your documents
 
-### 2. Prepare Your Documents
+- Place `.txt`, `.pdf`, `.md`, and `.json` files into the `docs/` folder.
+- Use `flatten_json_to_txt.py` to flatten bucket metadata.
 
-Put your `.pdf`, `.txt`, `.md`, or `.json` files in the `docs/` folder.
+```bash
+python flatten_json_to_txt.py
+```
 
-You can also use `convert_all_pdfs.py` or run `watch_folder.py` to convert PDFs automatically.
+### 3. 🏗 Build the vector index
 
-### 3. Build Embeddings
-
-
+```bash
 python build_embeddings_all.py
+```
 
+### 4. 🤖 Run the assistant via CLI
 
-This will:
-- Convert documents into searchable chunks
-- Create `s3_docs_index/` and `s3_docs_chunks.pkl`
+```bash
+python s3ai_query.py "What's bucket name for Finance Dept?"
+```
 
-### 4. Ask Questions via UI
+### 5. 🌐 Or launch Streamlit UI
 
+```bash
 streamlit run streamlit_ui.py
-
-Or
-
-python -m streamlit run streamlit_ui.py
-
-
-Or CLI:
-
-
-python s3ai_query.py "How to purge bucket in Cloudian?"
-
+```
 
 ---
 
-## Features
+## 💡 Features
 
-- Supports `.pdf`, `.txt`, `.json`, `.md` files
-- Local-only, no internet needed
-- Answers from documentation first, then JSON if found
-- Tracks recent questions
-- Easy copy-to-clipboard
-
----
-
-## LLM Backend
-
-This app uses [Ollama](https://ollama.com/) with the `mistral` model. You can change the model in `utils.py`.
+✅ Hybrid Vector + Metadata Search  
+✅ Offline Mode (No API key needed)  
+✅ Supports PDF, Markdown, Text, JSON  
+✅ Extensible with new documents or metadata  
+✅ Uses FAISS + HuggingFace Sentence Transformers  
 
 ---
 
-## License
+## 🧠 Sample Question Types
 
-MIT License — customize and use freely in your organization.
+| Type                  | Example                                               |
+|-----------------------|-------------------------------------------------------|
+| 🔍 Operational        | “How to purge bucket in Cloudian S3?”                 |
+| 📊 Metadata Lookup    | “What's bucket name for Finance Dept?”                |
+| ⚙️ Admin Commands     | “How to check S3 object count in Cloudian S3”         |
+| 🛠 Troubleshooting     | “What does error code 500 in IBM S3?”                 |
+
+---
+
+## 🧪 Tested On
+
+- Windows 10/11, Python 3.12  
+- Streamlit v1.35+  
+- LangChain v0.2+  
+- Sentence Transformers: `all-MiniLM-L6-v2`  
+- FAISS CPU (v1.7.4)
+
+---
+
+## 📘 License
+
+This project is licensed under the MIT License.
+
+---
+
+## 📸 Screenshot (UI)
+
+_Add a screenshot here after launching the Streamlit app._
+
+---
+
+## 🙋‍♂️ Contributions
+
+Feel free to fork and enhance — especially to add support for other vendors (e.g. NetApp, Dell ECS). PRs welcome!

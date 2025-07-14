@@ -5,7 +5,7 @@
 [![Streamlit](https://img.shields.io/badge/Streamlit-App-red)](https://streamlit.io/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-A powerful, **offline-ready AI assistant** for answering operational, admin, and troubleshooting questions for **S3-compatible On-Prem platforms** such as:
+**offline-ready AI assistant** for answering operational, admin, and troubleshooting questions for **S3-compatible On-Prem platforms** such as:
 
 - 📦 Cloudian HyperStore
 - 🏢 IBM Cloud Object Storage
@@ -48,13 +48,14 @@ Before you begin:
 2. **Install Ollama**
    ```bash
    curl -fsSL https://ollama.com/install.sh | sh
+   ```
 
 3. **Pull the Mistral model**
 ```bash
 ollama run mistral
+```
 
 > Leave Ollama running in the background or use
-```bash
 ollama serve
 
 ## 🚀 Quickstart
@@ -97,6 +98,7 @@ streamlit run streamlit_ui.py
 ## 💡 Features
 
 ✅ Hybrid Vector + Metadata Search  
+✅ Local LLM powered by [Mistral 7B](https://ollama.com/library/mistral) 
 ✅ Offline Mode (No API key needed)  
 ✅ Supports PDF, Markdown, Text, JSON  
 ✅ Extensible with new documents or metadata  

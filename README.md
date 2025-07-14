@@ -49,11 +49,13 @@ Before you begin:
    ```bash
    curl -fsSL https://ollama.com/install.sh | sh
 
-3. Pull the Mistral model
-
+3. **Pull the Mistral model**
+```bash
 ollama run mistral
 
-> Leave Ollama running in the background or use ollama serve.
+> Leave Ollama running in the background or use
+```bash
+ollama serve
 
 ## 🚀 Quickstart
 

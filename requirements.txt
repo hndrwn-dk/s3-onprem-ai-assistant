@@ -1,9 +1,27 @@
-langchain
+# Core LLM + Embeddings
+langchain>=0.2
 langchain-community
 sentence-transformers
 faiss-cpu
+
+# File parsers
 PyPDF2
-watchdog
-streamlit
 unstructured
+markdown
+
+# JSON utilities
 jq
+
+# App frameworks
+streamlit
+fastapi
+uvicorn
+
+# File watchers
+watchdog
+
+# Ollama client (used for Mistral model)
+ollama
+
+# Utils
+tqdm

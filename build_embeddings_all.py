@@ -1,46 +1,39 @@
-# build_embeddings_all.py — S3 On-Prem AI Assistant v1.4
+# build_embeddings_all.py – v2.2
+
 import os
-import json
 import pickle
-from pathlib import Path
-from langchain_community.vectorstores import FAISS
-from langchain_community.document_loaders import (
-    TextLoader, PyPDFLoader, JSONLoader, UnstructuredMarkdownLoader
-)
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.vectorstores import FAISS
+from utils import load_and_convert_documents, logger
+from config import DOCS_DIR, INDEX_FILE, CHUNKS_FILE, EMBED_MODEL
 
-INDEX_FILE = "s3_all_docs"
-CHUNKS_FILE = "s3_all_chunks.pkl"
-DOCS_DIR = "docs"
+def main(dry_run=False):
+    logger.info("🔍 Scanning documents...")
 
-embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
-all_docs = []
+    documents = load_and_convert_documents(DOCS_DIR)
+    if dry_run:
+        logger.info(f"✅ Dry run: {len(documents)} documents ready for processing.")
+        for doc in documents[:10]:
+            logger.info(f"— {doc.metadata.get('source', 'unknown')}")
+        return
 
-for file in os.listdir(DOCS_DIR):
-    path = os.path.join(DOCS_DIR, file)
-    try:
-        if file.endswith(".txt"):
-            loader = TextLoader(path, encoding="utf-8")
-        elif file.endswith(".pdf"):
-            loader = PyPDFLoader(path)
-        elif file.endswith(".json"):
-            loader = JSONLoader(path, jq_schema=".", text_content=False)
-        elif file.endswith(".md"):
-            loader = UnstructuredMarkdownLoader(path)
-        else:
-            continue
-        docs = loader.load()
-        all_docs.extend(splitter.split_documents(docs))
-        print(f"Loaded: {file}")
-    except Exception as e:
-        print(f"Skipping {file}: {e}")
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    docs_chunks = text_splitter.split_documents(documents)
+    logger.info(f"🧩 Total chunks: {len(docs_chunks)}")
 
-print(f"Total chunks: {len(all_docs)}")
-with open(CHUNKS_FILE, "wb") as f:
-    pickle.dump([doc.page_content for doc in all_docs], f)
+    embedding = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
+    db = FAISS.from_documents(docs_chunks, embedding)
 
-vectorstore = FAISS.from_documents(all_docs, embedding)
-vectorstore.save_local(INDEX_FILE)
-print("Embedding completed. Index and chunks saved.")
+    db.save_local(INDEX_FILE)
+    with open(CHUNKS_FILE, "wb") as f:
+        pickle.dump(docs_chunks, f)
+
+    logger.info(f"✅ Embedding complete. Saved to '{INDEX_FILE}' and chunks to '{CHUNKS_FILE}'.")
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dry-run", action="store_true", help="List files only, no embedding")
+    args = parser.parse_args()
+    main(dry_run=args.dry_run)

@@ -1,143 +1,177 @@
 # 🧠 S3 On-Prem AI Assistant
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
-[![LangChain](https://img.shields.io/badge/LangChain-0.2+-green.svg)](https://python.langchain.com/)
+[![LangChain](https://img.shields.io/badge/LangChain-0.2%2B-green.svg)](https://python.langchain.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-App-red)](https://streamlit.io/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Offline AI](https://img.shields.io/badge/Offline-AI-important.svg)](https://ollama.com/)
+[![Mistral Powered](https://img.shields.io/badge/LLM-Mistral_7B-ff69b4.svg)](https://ollama.com/library/mistral)
 
-**offline-ready AI assistant** for answering operational, admin, and troubleshooting questions for **S3-compatible On-Prem platforms** such as:
+A fully offline-capable AI assistant for answering operational, admin, and troubleshooting questions for on-premises S3-compatible platforms such as:
 
 - 📦 Cloudian HyperStore
-- 🏢 IBM Cloud Object Storage
-- ⚡ Pure FlashBlade
 - 🧊 Huawei OceanStor
-- 🐳 MinIO and others
+- ⚡ Pure FlashBlade
+- 🏢 IBM Cloud Object Storage
+- 🐳 MinIO and more
 
-It supports both **vector search** on `.txt/.pdf`/`.md` docs and **structured lookups** on flattened `.json` metadata.
+## Supports
+
+- ⚡ Hybrid vector + structured fallback
+- 🧾 JSON-based metadata lookups
+- 🌐 Streamlit UI and FastAPI endpoint
+- 🧠 Mistral 7B running via Ollama (no API key needed)
 
 ---
 
-## 📁 Project Structure
+## 📁 Folder Structure
 
 ```bash
 s3_onprem_ai_assistant/
-├── docs/                           # All input files (.txt/.pdf/.json)
-│   ├── sample_bucket_metadata.json
-│   ├── bucket_metadata_flattened.txt
-│   └── *.txt / *.pdf files
-├── s3ai_query.py                  # CLI tool to query docs + metadata
-├── streamlit_ui.py                # Web UI for the assistant
-├── build_embeddings_all.py        # Indexes all documents to FAISS
-├── convert_json_to_txt.py         # Converts JSON to readable .txt
-├── flatten_json_to_txt.py         # Flattens structured JSON metadata
-├── watch_folder.py                # Watches `docs/` for new files
-├── utils.py                       # Shared utility functions
-├── requirements.txt               # Python dependencies
-└── README.md                      # This file
+├── api.py                  # FastAPI REST API
+├── build_embeddings_all.py # Unified embedding + conversion
+├── config.py               # Central settings and paths
+├── s3ai_query.py           # CLI query tool
+├── streamlit_ui.py         # Streamlit web UI
+├── utils.py                # Utility + fallback handler
+├── docs/                   # Place .pdf / .md / .json here
+│   ├── *.pdf               # Admin guides
+│   ├── *.json              # Metadata
+│   └── *.txt / *.md        # Optional raw or converted text
 ```
 
 ---
 
-## 🧰 Prerequisites
+## 🧰 Requirements
 
-Before you begin:
+- Python 3.12+
+- Ollama + Mistral 7B
 
-1. **Install Python 3.12+**
-   > https://www.python.org/downloads/
-
-2. **Install Ollama**
-   ```bash
-   curl -fsSL https://ollama.com/install.sh | sh
-   ```
-
-3. **Pull the Mistral model**
-```bash
-ollama run mistral
-```
-
-> Leave Ollama running in the background or use
-ollama serve
-
-## 🚀 Quickstart
-
-### 1. 🔧 Install dependencies
+### 1️⃣ Install Python dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 📚 Prepare your documents
-
-- Place `.txt`, `.pdf`, `.md`, and `.json` files into the `docs/` folder.
-- Use `flatten_json_to_txt.py` to flatten bucket metadata.
+### 2️⃣ Install Ollama + Mistral
 
 ```bash
-python flatten_json_to_txt.py
+curl -fsSL https://ollama.com/install.sh | sh
+ollama run mistral
 ```
 
-### 3. 🏗 Build the vector index
+---
+
+## 🚀 Quickstart
+
+### 1. 🗂 Prepare your files in docs/
+
+Drop any combination of .pdf, .md, .json, or .txt.
+
+### 2. 🧠 Build or rebuild the index
 
 ```bash
 python build_embeddings_all.py
 ```
 
-### 4. 🤖 Run the assistant via CLI
+✅ Auto-converts .pdf, .md, .json to .txt
+🧪 Use --dry-run for test mode
+📊 Prints loaded document summary
+
+### 3. 🔍 Query using CLI
 
 ```bash
 python s3ai_query.py "What's bucket name for Finance Dept?"
 ```
 
-### 5. 🌐 Or launch Streamlit UI
+### 4. 🌐 Launch the Streamlit UI
 
 ```bash
 streamlit run streamlit_ui.py
 ```
+### 5. 🔌 Call the API
 
----
+```bash
+uvicorn api:app --reload --port 8000
+```
+Access: http://localhost:8000/docs
 
-## 💡 Features
+## 🧠 Answering Logic
+✅ Vector search – top-k content from .pdf/.md/.txt
+📄 JSON lookup fallback – if vector is low-score
+📂 TXT fallback – shows matching lines from .txt docs (tagged as [TXT Fallback Matches])
 
-✅ Hybrid Vector + Metadata Search  
-✅ Local LLM powered by [Mistral 7B](https://ollama.com/library/mistral) 
-✅ Offline Mode (No API key needed)  
-✅ Supports PDF, Markdown, Text, JSON  
-✅ Extensible with new documents or metadata  
-✅ Uses FAISS + HuggingFace Sentence Transformers  
+## 💬 Example Queries
 
----
+| Type               | Example                                                                  |
+| ------------------ | ------------------------------------------------------------------------ |
+| 🔧 Troubleshooting | “What does error code 403 in Huawei OBS?”                                |
+| 📊 Metadata Lookup | “Show requestor\_email for Bucket-001”                                   |
+| 🛠 Admin Tasks     | “How to purge a versioned bucket in Cloudian?”                           |
+| 🧾 Lookup          | “Find bucket\_name with [alert1@support.com](mailto:alert1@support.com)” |
 
-## 🧠 Sample Question Types
+## 🧾 Postman Collection
 
-| Type                  | Example                                               |
-|-----------------------|-------------------------------------------------------|
-| 🔍 Operational        | “How to purge bucket in Cloudian S3?”                 |
-| 📊 Metadata Lookup    | “What's bucket name for Finance Dept?”                |
-| ⚙️ Admin Commands     | “How to check S3 object count in Cloudian S3”         |
-| 🛠 Troubleshooting     | “What does error code 500 in IBM S3?”                 |
+```json
+{
+  "info": {
+    "name": "S3 On-Prem AI Assistant",
+    "_postman_id": "abcd1234-5678-9012-efgh-34567890ijkl",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Ask AI",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"pc code 619X\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/query",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["query"]
+        }
+      },
+      "response": []
+    }
+  ]
+}
+```
 
----
+## 🖼 Streamlit Dashboard Preview
+
+Example dashboard layout after launching streamlit_ui.py
+- Place `.txt`, `.pdf`, `.md`, and `.json` files into the `docs/` folder.
+- Use `flatten_json_to_txt.py` to flatten bucket metadata.
+
+## Feature Highlights
+
+✅ Offline Mode (no cloud dependency)
+✅ Auto .pdf/.json/.md to .txt conversion
+✅ FAISS + HuggingFace embeddings
+✅ LLM powered by Mistral 7B
+✅ Vector + Metadata fallback
+✅ Central config/logging (via config.py)
+✅ API + CLI + Web UI
+✅ Clear history button + copy result
+
 
 ## 🧪 Tested On
 
-- Windows 10/11, Python 3.12  
-- Streamlit v1.35+  
-- LangChain v0.2+  
-- Sentence Transformers: `all-MiniLM-L6-v2`  
-- FAISS CPU (v1.7.4)
-
----
+- Python 3.12
+- LangChain 0.2+
+- Streamlit 1.35+
+- FAISS CPU 1.7.4
+- Ollama (Mistral 7B)
 
 ## 📘 License
 
-This project is licensed under the MIT License.
-
----
-
-## 📸 Screenshot (UI)
-
-_Add a screenshot here after launching the Streamlit app._
-
----
+This project is licensed under the MIT License
 
 ## 🙋‍♂️ Contributions
 

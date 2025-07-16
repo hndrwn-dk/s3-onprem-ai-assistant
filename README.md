@@ -97,9 +97,9 @@ uvicorn api:app --reload --port 8000
 Access: http://localhost:8000/docs
 
 ## 🧠 Answering Logic
-✅ Vector search – top-k content from .pdf/.md/.txt
-📄 JSON lookup fallback – if vector is low-score
-📂 TXT fallback – shows matching lines from .txt docs (tagged as [TXT Fallback Matches])
+- ✅ Vector search – top-k content from .pdf/.md/.txt
+- 📄 JSON lookup fallback – if vector is low-score
+- 📂 TXT fallback – shows matching lines from .txt docs (tagged as [TXT Fallback Matches])
 
 ## 💬 Example Queries
 
@@ -226,14 +226,14 @@ Example dashboard layout after launching streamlit_ui.py
 
 ## Feature Highlights
 
-✅ Offline Mode (no cloud dependency)
-✅ Auto .pdf/.json/.md to .txt conversion
-✅ FAISS + HuggingFace embeddings
-✅ LLM powered by Mistral 7B
-✅ Vector + Metadata fallback
-✅ Central config/logging (via config.py)
-✅ API + CLI + Web UI
-✅ Clear history button + copy result
+- ✅ Offline Mode (no cloud dependency)
+- ✅ Auto .pdf/.json/.md to .txt conversion
+- ✅ FAISS + HuggingFace embeddings
+- ✅ LLM powered by Mistral 7B
+- ✅ Vector + Metadata fallback
+- ✅ Central config/logging (via config.py)
+- ✅ API + CLI + Web UI
+- ✅ Clear history button + copy result
 
 
 ## 🧪 Tested On

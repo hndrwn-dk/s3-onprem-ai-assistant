@@ -115,19 +115,25 @@ Access: http://localhost:8000/docs
 ```json
 {
   "info": {
-    "name": "S3 On-Prem AI Assistant",
-    "_postman_id": "abcd1234-5678-9012-efgh-34567890ijkl",
+    "_postman_id": "1a6b4ffb-8e36-453c-bb27-123456789abc",
+    "name": "S3 On-Prem AI Assistant v2.2",
+    "description": "Postman collection for querying local FastAPI AI Assistant using Mistral model + JSON/txt metadata.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Ask AI",
+      "name": "Search: Bucket Owner",
       "request": {
         "method": "POST",
-        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"query\": \"pc code 619X\"\n}"
+          "raw": "{\n  \"query\": \"Which buckets belong to team-a?\"\n}"
         },
         "url": {
           "raw": "http://localhost:8000/query",
@@ -136,11 +142,80 @@ Access: http://localhost:8000/docs
           "port": "8000",
           "path": ["query"]
         }
-      },
-      "response": []
+      }
+    },
+    {
+      "name": "Search: Department Buckets",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"Show all buckets owned by Finance\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/query",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["query"]
+        }
+      }
+    },
+    {
+      "name": "Search: Backup Buckets",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"Which buckets are labeled as backup?\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/query",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["query"]
+        }
+      }
+    },
+    {
+      "name": "Search: Versioning Enabled",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"Which buckets have versioning enabled?\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/query",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["query"]
+        }
+      }
     }
   ]
 }
+
 ```
 
 ## 🖼 Streamlit Dashboard Preview

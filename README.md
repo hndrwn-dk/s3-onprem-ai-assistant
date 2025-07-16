@@ -74,9 +74,9 @@ Drop any combination of .pdf, .md, .json, or .txt.
 python build_embeddings_all.py
 ```
 
-✅ Auto-converts .pdf, .md, .json to .txt
-🧪 Use --dry-run for test mode
-📊 Prints loaded document summary
+- ✅ Auto-converts .pdf, .md, .json to .txt
+- 🧪 Use --dry-run for test mode
+- 📊 Prints loaded document summary
 
 ### 3. 🔍 Query using CLI
 

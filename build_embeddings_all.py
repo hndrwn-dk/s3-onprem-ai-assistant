@@ -9,18 +9,18 @@ from utils import load_and_convert_documents, logger
 from config import DOCS_DIR, INDEX_FILE, CHUNKS_FILE, EMBED_MODEL
 
 def main(dry_run=False):
-    logger.info("🔍 Scanning documents...")
+    logger.info("Scanning documents...")
 
     documents = load_and_convert_documents(DOCS_DIR)
     if dry_run:
-        logger.info(f"✅ Dry run: {len(documents)} documents ready for processing.")
+        logger.info(f"Dry run: {len(documents)} documents ready for processing.")
         for doc in documents[:10]:
             logger.info(f"— {doc.metadata.get('source', 'unknown')}")
         return
 
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     docs_chunks = text_splitter.split_documents(documents)
-    logger.info(f"🧩 Total chunks: {len(docs_chunks)}")
+    logger.info(f"Total chunks: {len(docs_chunks)}")
 
     embedding = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
     db = FAISS.from_documents(docs_chunks, embedding)
@@ -29,7 +29,7 @@ def main(dry_run=False):
     with open(CHUNKS_FILE, "wb") as f:
         pickle.dump(docs_chunks, f)
 
-    logger.info(f"✅ Embedding complete. Saved to '{INDEX_FILE}' and chunks to '{CHUNKS_FILE}'.")
+    logger.info(f"Embedding complete. Saved to '{INDEX_FILE}' and chunks to '{CHUNKS_FILE}'.")
 
 if __name__ == "__main__":
     import argparse

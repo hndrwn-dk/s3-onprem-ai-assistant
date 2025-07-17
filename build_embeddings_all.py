@@ -1,39 +1,52 @@
-# build_embeddings_all.py – v2.2
+# build_embeddings_all.py (v2.2.6) - Speed Optimized
 
 import os
 import pickle
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.vectorstores import FAISS
-from utils import load_and_convert_documents, logger
-from config import DOCS_DIR, INDEX_FILE, CHUNKS_FILE, EMBED_MODEL
+from langchain_community.vectorstores import FAISS
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from utils import load_documents_from_path, logger, timing_decorator
+from config import VECTOR_INDEX_PATH, CHUNKS_PATH, EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP
 
-def main(dry_run=False):
+@timing_decorator
+def build_vector_index():
     logger.info("Scanning documents...")
-
-    documents = load_and_convert_documents(DOCS_DIR)
-    if dry_run:
-        logger.info(f"Dry run: {len(documents)} documents ready for processing.")
-        for doc in documents[:10]:
-            logger.info(f"— {doc.metadata.get('source', 'unknown')}")
+    documents = load_documents_from_path()
+    if not documents:
+        logger.warning("No documents found.")
         return
 
-    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    docs_chunks = text_splitter.split_documents(documents)
-    logger.info(f"Total chunks: {len(docs_chunks)}")
+    logger.info(f"Total documents loaded: {len(documents)}")
+    
+    # Split documents into optimized chunks
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=CHUNK_SIZE,      # Optimized size
+        chunk_overlap=CHUNK_OVERLAP, # Optimized overlap
+        length_function=len,
+        separators=["\n\n", "\n", ".", "!", "?", ",", " ", ""]
+    )
+    
+    logger.info("Splitting documents into chunks...")
+    chunks = text_splitter.split_documents(documents)
+    logger.info(f"Total chunks after splitting: {len(chunks)}")
+    
+    # Create embeddings and vector store
+    logger.info("Creating embeddings...")
+    embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
+    
+    logger.info("Building FAISS vector store...")
+    vector_store = FAISS.from_documents(chunks, embeddings)
+    
+    # Save vector store
+    logger.info("Saving vector store...")
+    vector_store.save_local(VECTOR_INDEX_PATH)
 
-    embedding = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
-    db = FAISS.from_documents(docs_chunks, embedding)
+    # Save chunks for debugging
+    with open(CHUNKS_PATH, "wb") as f:
+        pickle.dump(chunks, f)
 
-    db.save_local(INDEX_FILE)
-    with open(CHUNKS_FILE, "wb") as f:
-        pickle.dump(docs_chunks, f)
-
-    logger.info(f"Embedding complete. Saved to '{INDEX_FILE}' and chunks to '{CHUNKS_FILE}'.")
+    logger.info(f"Embedding build complete. Vector store saved to {VECTOR_INDEX_PATH}")
+    logger.info(f"Chunks saved to {CHUNKS_PATH}")
 
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dry-run", action="store_true", help="List files only, no embedding")
-    args = parser.parse_args()
-    main(dry_run=args.dry_run)
+    build_vector_index()

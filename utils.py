@@ -1,46 +1,138 @@
-# utils.py – v2.2
+# utils.py (v2.2.6) - Speed Optimized
+
 import os
 import json
 import logging
-from langchain.document_loaders import TextLoader, PyPDFLoader
-from langchain.docstore.document import Document
-from config import LOG_FORMAT, LOG_LEVEL
+import time
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
+from langchain_core.documents import Document
+from config import DOCS_PATH, FLATTENED_TXT_PATH
 
-logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
-logger = logging.getLogger("S3AI")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def load_and_convert_documents(docs_dir):
-    documents = []
+def timing_decorator(func):
+    """Decorator to measure function execution time"""
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        logger.info(f"{func.__name__} took {end_time - start_time:.2f} seconds")
+        return result
+    return wrapper
 
-    for fname in os.listdir(docs_dir):
-        fpath = os.path.join(docs_dir, fname)
-        ext = os.path.splitext(fname)[1].lower()
+@timing_decorator
+def load_documents_from_path(path: str = DOCS_PATH) -> list[Document]:
+    """Load documents from various file types in the specified path"""
+    docs = []
+    
+    if not os.path.exists(path):
+        logger.warning(f"Path {path} does not exist")
+        return docs
+    
+    for root, _, files in os.walk(path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            logger.info(f"Processing file: {file_path}")
+            
+            if file.endswith(".pdf"):
+                try:
+                    loader = PyPDFLoader(file_path)
+                    pdf_docs = loader.load()
+                    docs.extend(pdf_docs)
+                    logger.info(f"Loaded {len(pdf_docs)} pages from {file_path}")
+                except Exception as e:
+                    logger.error(f"Failed to load PDF: {file_path} ({e})")
+                    
+            elif file.endswith(".txt"):
+                try:
+                    loader = TextLoader(file_path, encoding='utf-8')
+                    txt_docs = loader.load()
+                    docs.extend(txt_docs)
+                    logger.info(f"Loaded {len(txt_docs)} documents from {file_path}")
+                except Exception as e:
+                    logger.error(f"Failed to load TXT: {file_path} ({e})")
+                    
+            elif file.endswith(".json"):
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        json_data = json.load(f)
+                    
+                    # Convert JSON to text format for better embedding
+                    if isinstance(json_data, dict):
+                        content = json.dumps(json_data, indent=2)
+                    elif isinstance(json_data, list):
+                        content = json.dumps(json_data, indent=2)
+                    else:
+                        content = str(json_data)
+                    
+                    doc = Document(
+                        page_content=content,
+                        metadata={"source": file_path, "type": "json"}
+                    )
+                    docs.append(doc)
+                    logger.info(f"Loaded JSON document from {file_path}")
+                except Exception as e:
+                    logger.error(f"Failed to load JSON: {file_path} ({e})")
+                    
+            elif file.endswith(".md"):
+                try:
+                    loader = TextLoader(file_path, encoding='utf-8')
+                    md_docs = loader.load()
+                    docs.extend(md_docs)
+                    logger.info(f"Loaded {len(md_docs)} documents from {file_path}")
+                except Exception as e:
+                    logger.error(f"Failed to load MD: {file_path} ({e})")
+    
+    logger.info(f"Total documents loaded: {len(docs)}")
+    return docs
 
+def load_txt_documents(file_path: str = FLATTENED_TXT_PATH) -> str:
+    """Load content from the flattened TXT file"""
+    # First try the configured path
+    if os.path.exists(file_path):
         try:
-            if ext == ".pdf":
-                loader = PyPDFLoader(fpath)
-                documents.extend(loader.load())
-            elif ext == ".txt":
-                loader = TextLoader(fpath)
-                documents.extend(loader.load())
-            elif ext == ".json":
-                with open(fpath) as f:
-                    data = json.load(f)
-                for entry in data if isinstance(data, list) else [data]:
-                    content = "\n".join(f"{k}: {v}" for k, v in entry.items())
-                    documents.append(Document(page_content=content, metadata={"source": fname}))
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+                logger.info(f"Loaded {len(content)} characters from {file_path}")
+                return content
         except Exception as e:
-            logger.warning(f"Skipped {fname}: {e}")
+            logger.error(f"Failed to load TXT file {file_path}: {e}")
+    
+    # If not found, try looking in docs/ folder
+    docs_txt_path = os.path.join(DOCS_PATH, "sample_bucket_metadata_converted.txt")
+    if os.path.exists(docs_txt_path):
+        try:
+            with open(docs_txt_path, "r", encoding="utf-8") as f:
+                content = f.read()
+                logger.info(f"Loaded {len(content)} characters from {docs_txt_path}")
+                return content
+        except Exception as e:
+            logger.error(f"Failed to load TXT file {docs_txt_path}: {e}")
+    
+    logger.warning(f"Flattened TXT file not found in either {file_path} or {docs_txt_path}")
+    return ""
 
-    return documents
+def quick_relevance_check(query: str, text: str, threshold: int = 1) -> bool:
+    """Quick check if text is relevant before expensive processing"""
+    query_words = query.lower().split()
+    text_lower = text.lower()
+    matches = sum(1 for word in query_words if word in text_lower and len(word) > 2)
+    return matches >= threshold
 
-def load_txt_documents(docs_dir):
-    txt_docs = []
-    for fname in os.listdir(docs_dir):
-        if fname.endswith(".txt"):
-            try:
-                loader = TextLoader(os.path.join(docs_dir, fname))
-                txt_docs.extend(loader.load())
-            except Exception as e:
-                logger.warning(f"Failed to load {fname}: {e}")
-    return txt_docs
+def search_in_fallback_text(query: str, text: str, max_results: int = 10) -> str:
+    """Search for query in fallback text and return relevant context"""
+    if not text:
+        return ""
+    
+    query_lower = query.lower()
+    lines = text.split('\n')
+    matching_lines = []
+    
+    for i, line in enumerate(lines):
+        if query_lower in line.lower():
+            matching_lines.append(f"Line {i+1}: {line.strip()}")
+            if len(matching_lines) >= max_results:
+                break
+    
+    return '\n'.join(matching_lines) if matching_lines else ""

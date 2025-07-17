@@ -1,0 +1,65 @@
+# S3 On-Premises AI Assistant - Minimal Safe Versions
+# Python 3.11.9 Compatible
+
+# Core AI and ML Libraries
+langchain
+langchain-community
+langchain-core
+
+# LLM and Embeddings
+ollama
+sentence-transformers
+transformers
+
+# PyTorch (let pip choose compatible version)
+torch
+torchvision
+torchaudio
+
+# Vector Database
+faiss-cpu
+numpy
+
+# Document Processing
+PyPDF2
+pypdf
+python-docx
+markdown
+
+# Web Framework and API
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+
+# UI Framework
+streamlit
+
+# Data Processing
+pandas
+
+# Utilities and Performance
+requests
+aiofiles
+
+# Text Processing
+regex
+beautifulsoup4
+lxml
+
+# Environment and Configuration
+python-dotenv
+pyyaml
+
+# Security (let pip choose compatible version)
+cryptography
+urllib3
+
+# System and OS
+psutil
+
+# Logging and Monitoring
+rich
+
+# Platform-specific packages
+colorama

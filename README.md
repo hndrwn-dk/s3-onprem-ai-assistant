@@ -11,6 +11,13 @@
 
 A **lightning-fast**, fully offline-capable AI assistant for answering operational, admin, and troubleshooting questions for on-premises S3-compatible platforms. **15-60x faster** than typical implementations with advanced caching and optimization.
 
+## ☕ Support Me
+
+If you find this project helpful, you can support me here:
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-yellow?style=for-the-badge&logo=buymeacoffee&logoColor=white)](https://buymeacoffee.com/hendrawan)
+
+
 ## 🏢 Supported Platforms
 
 - 📦 **Cloudian HyperStore**

@@ -1,0 +1,34 @@
+version: "3.8"
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+
+  api:
+    build: .
+    restart: unless-stopped
+    environment:
+      - MODEL=${MODEL:-phi3:mini}
+      - API_KEY=${API_KEY:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - VECTOR_SEARCH_K=${VECTOR_SEARCH_K:-3}
+      - CACHE_TTL_HOURS=${CACHE_TTL_HOURS:-24}
+      - ALLOW_DANGEROUS_DESERIALIZATION=${ALLOW_DANGEROUS_DESERIALIZATION:-true}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./cache:/app/cache
+      - ./s3_all_docs:/app/s3_all_docs
+      - ./docs:/app/docs
+    depends_on:
+      - ollama
+
+volumes:
+  ollama:
+    driver: local

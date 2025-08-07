@@ -1,0 +1,157 @@
+# docker-compose.yml for S3 On-Premises AI Assistant v2.2.7
+# Complete stack with Ollama and monitoring
+
+version: '3.8'
+
+services:
+  # Ollama service for LLM inference
+  ollama:
+    image: ollama/ollama:latest
+    container_name: s3ai-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - s3ai-network
+
+  # S3 AI Assistant API
+  s3ai-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: s3ai-api
+    ports:
+      - "8000:8000"
+    environment:
+      - S3AI_LOG_LEVEL=INFO
+      - S3AI_API_HOST=0.0.0.0
+      - S3AI_API_PORT=8000
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - S3AI_LLM_MODEL=phi3:mini
+      - S3AI_DEBUG=false
+      - S3AI_CACHE_TTL_HOURS=24
+      - S3AI_RATE_LIMIT=30
+    volumes:
+      - ./docs:/app/docs:ro
+      - s3ai_cache:/app/cache
+      - s3ai_vectors:/app/s3_all_docs
+      - s3ai_logs:/app/logs
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - s3ai-network
+
+  # Streamlit UI (optional)
+  s3ai-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: s3ai-ui
+    ports:
+      - "8501:8501"
+    environment:
+      - S3AI_API_URL=http://s3ai-api:8000
+    command: ["streamlit", "run", "streamlit_ui.py", "--server.address", "0.0.0.0", "--server.port", "8501"]
+    depends_on:
+      s3ai-api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - s3ai-network
+
+  # Model initialization service
+  model-init:
+    image: curlimages/curl:latest
+    container_name: s3ai-model-init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+    command: >
+      sh -c "
+        echo 'Pulling phi3:mini model...';
+        curl -X POST http://ollama:11434/api/pull -d '{\"name\":\"phi3:mini\"}' -H 'Content-Type: application/json';
+        echo 'Model download initiated';
+      "
+    networks:
+      - s3ai-network
+
+  # Redis for caching (optional production enhancement)
+  redis:
+    image: redis:7-alpine
+    container_name: s3ai-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - s3ai-network
+    profiles:
+      - production
+
+  # Monitoring with Prometheus (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: s3ai-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - s3ai-network
+    profiles:
+      - monitoring
+
+volumes:
+  ollama_data:
+    driver: local
+  s3ai_cache:
+    driver: local
+  s3ai_vectors:
+    driver: local
+  s3ai_logs:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+
+networks:
+  s3ai-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

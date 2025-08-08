@@ -1,0 +1,68 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+
+  api:
+    build: .
+    restart: unless-stopped
+    environment:
+      - MODEL=${MODEL:-phi3:mini}
+      - API_KEY=${API_KEY:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - VECTOR_SEARCH_K=${VECTOR_SEARCH_K:-3}
+      - CACHE_TTL_HOURS=${CACHE_TTL_HOURS:-24}
+      - ALLOW_DANGEROUS_DESERIALIZATION=${ALLOW_DANGEROUS_DESERIALIZATION:-true}
+      - OLLAMA_HOST=http://ollama:11434
+      - QUICK_SEARCH_MAX_RESULTS=${QUICK_SEARCH_MAX_RESULTS:-10}
+      - QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK=${QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK:-true}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./cache:/app/cache
+      - ./s3_all_docs:/app/s3_all_docs
+      - ./docs:/app/docs
+    depends_on:
+      - ollama
+
+  streamlit:
+    build: .
+    command: streamlit run streamlit_ui.py --server.address 0.0.0.0 --server.port 8501
+    restart: unless-stopped
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - QUICK_SEARCH_MAX_RESULTS=${QUICK_SEARCH_MAX_RESULTS:-10}
+      - QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK=${QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK:-true}
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./s3_all_docs:/app/s3_all_docs
+      - ./docs:/app/docs
+      - ./cache:/app/cache
+    depends_on:
+      - ollama
+      - api
+
+  cli:
+    build: .
+    entrypoint: ["python", "s3ai_query.py"]
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - QUICK_SEARCH_MAX_RESULTS=${QUICK_SEARCH_MAX_RESULTS:-10}
+      - QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK=${QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK:-true}
+    volumes:
+      - ./s3_all_docs:/app/s3_all_docs
+      - ./docs:/app/docs
+      - ./cache:/app/cache
+    depends_on:
+      - ollama
+
+volumes:
+  ollama:
+    driver: local

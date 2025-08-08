@@ -223,7 +223,7 @@ curl -X POST "http://localhost:8000/ask" \
 ```json
 {
   "info": {
-    "name": "S3 On-Prem AI Assistant v2.2.6 - Speed Optimized",
+    "name": "S3 On-Prem AI Assistant v2.3.0 - Security & Deployability",
     "description": "Lightning-fast queries with performance metrics"
   },
   "item": [
@@ -338,7 +338,14 @@ python -c "from model_cache import ModelCache; print(ModelCache.get_load_times()
 
 ## 🎯 Version History
 
-### v2.2.6 - Speed Optimized (Current)
+### v2.3.0 - Security & Deployability (Current)
+- 🔐 **API key auth and CORS**
+- 🧵 **Thread-safe model/response cache**
+- 🧱 **Graceful startup without FAISS index**
+- 🐳 **Dockerfile and docker-compose**
+- ⚙️ **Config-driven model settings**
+
+### v2.2.6 - Speed Optimized
 - ⚡ **15-60x performance improvement**
 - 🧠 **Multi-tier caching system**
 - 🔍 **Pre-indexed bucket search**
@@ -386,6 +393,27 @@ We welcome contributions! Areas of interest:
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
+
+---
+
+## 🔒 Security
+- Set an API key by exporting `API_KEY` or in `docker-compose.yml`. Protected endpoints require header `X-API-Key: <value>`.
+- Configure allowed CORS origins via `CORS_ORIGINS` (comma-separated), default `*`.
+- Note: FAISS loading uses a configurable flag `ALLOW_DANGEROUS_DESERIALIZATION` (default true). Keep indices in a trusted location.
+
+## 🐳 Docker Quickstart
+```bash
+# Build and run API + Ollama
+docker compose up --build -d
+
+# Pull model in Ollama container (first run)
+docker exec -it $(docker ps -q -f name=ollama) ollama pull phi3:mini
+
+# Call the API
+curl -H "X-API-Key: $API_KEY" -X POST localhost:8000/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question": "show all buckets under dept: engineering"}'
+```
 
 ---
 

@@ -8,7 +8,6 @@ from config import (
     EMBED_MODEL,
     MODEL,
     TEMPERATURE,
-    NUM_PREDICT,
     TOP_K,
     TOP_P,
     ALLOW_DANGEROUS_DESERIALIZATION,
@@ -39,8 +38,6 @@ class ModelCache:
                         top_k=TOP_K,
                         top_p=TOP_P,
                     )
-                    # Pass model-specific options via model_kwargs
-                    kwargs["model_kwargs"] = {"num_predict": NUM_PREDICT}
                     if base_url:
                         kwargs["base_url"] = base_url
                     cls._llm = Ollama(**kwargs)

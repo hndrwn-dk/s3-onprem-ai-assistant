@@ -1,6 +1,6 @@
 # Contributing to S3 On-Prem AI Assistant
 
-Thank you for your interest in contributing to this project! 🙌
+Thank you for your interest in contributing to this project!
 
 ## How to Contribute
 

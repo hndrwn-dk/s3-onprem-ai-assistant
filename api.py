@@ -10,6 +10,7 @@ from utils import logger, timing_decorator, search_in_fallback_text, load_txt_do
 from config import VECTOR_SEARCH_K, API_KEY, CORS_ORIGINS
 import time
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI(title="S3 On-Prem AI Assistant API - Lightning Fast", version="2.3.0")
 
@@ -48,10 +49,15 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"LLM preload failed: {e}")
 
-    try:
-        ModelCache.get_vector_store()
-    except Exception as e:
-        logger.warning(f"Vector store preload failed: {e}")
+    # Skip vector store preload by default to avoid blocking startup (downloads)
+    preload_vector = os.getenv("PRELOAD_VECTOR", "0").lower() in ("1", "true", "yes")
+    if preload_vector:
+        try:
+            ModelCache.get_vector_store()
+        except Exception as e:
+            logger.warning(f"Vector store preload failed: {e}")
+    else:
+        logger.info("Vector store preload skipped (set PRELOAD_VECTOR=1 to enable)")
 
     logger.info("Startup initialization completed")
 

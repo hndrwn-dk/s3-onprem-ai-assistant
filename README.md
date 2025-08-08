@@ -53,21 +53,21 @@ If you find this project helpful, you can support me here:
 
 ```
 Query Input
-    ↓
+    |
 [Input Validation & Security]
-    ↓
-[1. Cache Layer] ←→ Redis (Optional)
-    ↓ (miss)
-[2. Quick Bucket Search] ←→ Pre-indexed Metadata
-    ↓ (miss)
-[3. Vector Search] ←→ FAISS + HuggingFace Embeddings
-    ↓ (miss)
-[4. Text Fallback] ←→ Raw Text Search
-    ↓
-[AI Response Generation] ←→ Ollama (PHI3:mini)
-    ↓
+    |
+[1. Cache Layer] <-> Redis (Optional)
+    | (miss)
+[2. Quick Bucket Search] <-> Pre-indexed Metadata
+    | (miss)
+[3. Vector Search] <-> FAISS + HuggingFace Embeddings
+    | (miss)
+[4. Text Fallback] <-> Raw Text Search
+    |
+[AI Response Generation] <-> Ollama (PHI3:mini)
+    |
 [Response Caching]
-    ↓
+    |
 JSON Response
 ```
 
@@ -124,24 +124,24 @@ streamlit run streamlit_ui.py
 
 ```
 s3-onprem-ai-assistant/
-├── api.py                 # FastAPI REST API server
-├── streamlit_ui.py        # Streamlit web interface
-├── s3ai_query.py         # Command-line interface
-├── model_cache.py        # LLM and vector store caching
-├── response_cache.py     # Response caching system
-├── bucket_index.py       # Quick bucket search index
-├── utils.py              # Document loading and utilities
-├── config.py            # Configuration management
-├── validation.py        # Input validation and security
-├── build_embeddings_all.py # Embedding generation script
-├── requirements.txt     # Python dependencies
-├── Dockerfile          # Container image definition
-├── docker-compose.yml  # Multi-service deployment
-├── docs/               # Your documents go here
-├── s3_all_docs/        # Generated vector embeddings
-├── cache/              # Response cache storage
-├── tests/              # Test suite
-└── logs/               # Application logs
+|-- api.py                 # FastAPI REST API server
+|-- streamlit_ui.py        # Streamlit web interface
+|-- s3ai_query.py         # Command-line interface
+|-- model_cache.py        # LLM and vector store caching
+|-- response_cache.py     # Response caching system
+|-- bucket_index.py       # Quick bucket search index
+|-- utils.py              # Document loading and utilities
+|-- config.py            # Configuration management
+|-- validation.py        # Input validation and security
+|-- build_embeddings_all.py # Embedding generation script
+|-- requirements.txt     # Python dependencies
+|-- Dockerfile          # Container image definition
+|-- docker-compose.yml  # Multi-service deployment
+|-- docs/               # Your documents go here
+|-- s3_all_docs/        # Generated vector embeddings
+|-- cache/              # Response cache storage
+|-- tests/              # Test suite
+`-- logs/               # Application logs
 ```
 
 ## Usage Examples

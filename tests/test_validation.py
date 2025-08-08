@@ -56,7 +56,7 @@ class TestInputValidator:
     
     def test_validate_query_sanitization(self):
         """Test query sanitization"""
-        query = "show buckets with special chars: ñ†∂∆"
+        query = "show buckets with special chars: $@#%"
         result = InputValidator.validate_query(query)
         # Should remove or replace special characters
         assert len(result) <= len(query)

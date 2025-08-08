@@ -16,6 +16,7 @@ from config import (
 import time
 from utils import logger
 import threading
+import os
 
 
 class ModelCache:
@@ -31,13 +32,17 @@ class ModelCache:
             with cls._lock:
                 if cls._llm is None:
                     start_time = time.time()
-                    cls._llm = Ollama(
+                    base_url = os.getenv("OLLAMA_HOST") or os.getenv("OLLAMA_BASE_URL")
+                    kwargs = dict(
                         model=MODEL,
                         temperature=TEMPERATURE,
                         num_predict=NUM_PREDICT,
                         top_k=TOP_K,
                         top_p=TOP_P,
                     )
+                    if base_url:
+                        kwargs["base_url"] = base_url
+                    cls._llm = Ollama(**kwargs)
                     cls._load_times['llm'] = time.time() - start_time
                     logger.info(f"LLM loaded in {cls._load_times['llm']:.2f} seconds")
         return cls._llm

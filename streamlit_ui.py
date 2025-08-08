@@ -37,6 +37,8 @@ st.caption("Ultra-fast queries for Cloudian, IBM, MinIO, and bucket metadata")
 # Sidebar: performance + data management
 with st.sidebar:
     st.subheader("Performance")
+    # Toggle to use AI formatting for quick results
+    st.session_state.use_ai_format = st.toggle("AI-format quick results", value=False)
     perf = ModelCache.get_load_times()
     col_a, col_b = st.columns(2)
     with col_a:
@@ -132,7 +134,12 @@ if submit and query:
 Question: {query}
 Answer:"""
                 try:
-                    answer = llm(prompt)
+                    # By default, skip LLM formatting for fastest UX
+                    use_ai_format = st.session_state.get("use_ai_format", False)
+                    if use_ai_format:
+                        answer = llm(prompt)
+                    else:
+                        answer = quick_result
                     progress_bar.progress(100)
                     status_text.empty()
                     rt = time.time() - start_time

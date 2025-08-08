@@ -14,6 +14,8 @@ FLATTENED_TXT_PATH = os.path.join(DOCS_PATH, "sample_bucket_metadata_converted.t
 
 # Embedding model
 EMBED_MODEL = os.getenv("EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+EMBED_DEVICE = os.getenv("EMBED_DEVICE", "cpu")
+EMBED_BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", "64"))
 
 # Performance settings
 VECTOR_SEARCH_K = int(os.getenv("VECTOR_SEARCH_K", "3"))  # Reduced from 5 for speed

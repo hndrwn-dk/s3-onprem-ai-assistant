@@ -6,7 +6,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from utils import load_documents_from_path, logger, timing_decorator
-from config import VECTOR_INDEX_PATH, CHUNKS_PATH, EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP
+from config import VECTOR_INDEX_PATH, CHUNKS_PATH, EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP, EMBED_DEVICE, EMBED_BATCH_SIZE
 
 @timing_decorator
 def build_vector_index():
@@ -32,7 +32,7 @@ def build_vector_index():
     
     # Create embeddings and vector store
     logger.info("Creating embeddings...")
-    embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
+    embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": EMBED_DEVICE}, encode_kwargs={"batch_size": EMBED_BATCH_SIZE})
     
     logger.info("Building FAISS vector store...")
     vector_store = FAISS.from_documents(chunks, embeddings)

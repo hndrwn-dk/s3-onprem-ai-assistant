@@ -6,6 +6,7 @@ services:
       - "11434:11434"
     volumes:
       - ollama:/root/.ollama
+      - hf_cache:/root/.cache/huggingface
     environment:
       - OLLAMA_HOST=0.0.0.0
 
@@ -22,12 +23,15 @@ services:
       - OLLAMA_HOST=http://ollama:11434
       - QUICK_SEARCH_MAX_RESULTS=${QUICK_SEARCH_MAX_RESULTS:-10}
       - QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK=${QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK:-true}
+      - EMBED_DEVICE=${EMBED_DEVICE:-cpu}
+      - EMBED_BATCH_SIZE=${EMBED_BATCH_SIZE:-64}
     ports:
       - "8000:8000"
     volumes:
       - ./cache:/app/cache
       - ./s3_all_docs:/app/s3_all_docs
       - ./docs:/app/docs
+      - hf_cache:/root/.cache/huggingface
     depends_on:
       - ollama
 
@@ -39,12 +43,15 @@ services:
       - OLLAMA_HOST=http://ollama:11434
       - QUICK_SEARCH_MAX_RESULTS=${QUICK_SEARCH_MAX_RESULTS:-10}
       - QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK=${QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK:-true}
+      - EMBED_DEVICE=${EMBED_DEVICE:-cpu}
+      - EMBED_BATCH_SIZE=${EMBED_BATCH_SIZE:-64}
     ports:
       - "8501:8501"
     volumes:
       - ./s3_all_docs:/app/s3_all_docs
       - ./docs:/app/docs
       - ./cache:/app/cache
+      - hf_cache:/root/.cache/huggingface
     depends_on:
       - ollama
       - api
@@ -65,4 +72,6 @@ services:
 
 volumes:
   ollama:
+    driver: local
+  hf_cache:
     driver: local

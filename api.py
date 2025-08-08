@@ -98,11 +98,21 @@ Question: {question}
 Answer:"""
 
             try:
-                answer = llm(prompt)
+                import concurrent.futures
+                from config import LLM_TIMEOUT_SECONDS
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                    fut = ex.submit(llm, prompt)
+                    answer = fut.result(timeout=LLM_TIMEOUT_SECONDS)
                 response_cache.set(question, answer, "quick_search")
                 return QueryResponse(
                     answer=answer,
                     source="quick_search",
+                    response_time=time.time() - start_time,
+                )
+            except concurrent.futures.TimeoutError:
+                return QueryResponse(
+                    answer=quick_result,
+                    source="quick_search_timeout_raw",
                     response_time=time.time() - start_time,
                 )
             except Exception as e:
@@ -122,7 +132,11 @@ Answer:"""
             retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
             llm = ModelCache.get_llm()
             qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
-            result = qa_chain.run(question)
+            import concurrent.futures
+            from config import LLM_TIMEOUT_SECONDS
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                fut = ex.submit(qa_chain.run, question)
+                result = fut.result(timeout=LLM_TIMEOUT_SECONDS)
 
             if result and result.strip():
                 response_cache.set(question, result, "vector")

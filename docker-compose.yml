@@ -1,4 +1,3 @@
-version: "3.8"
 services:
   ollama:
     image: ollama/ollama:latest
@@ -28,6 +27,36 @@ services:
       - ./cache:/app/cache
       - ./s3_all_docs:/app/s3_all_docs
       - ./docs:/app/docs
+    depends_on:
+      - ollama
+
+  streamlit:
+    build: .
+    command: streamlit run streamlit_ui.py --server.address 0.0.0.0 --server.port 8501
+    restart: unless-stopped
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - QUICK_SEARCH_MAX_RESULTS=${QUICK_SEARCH_MAX_RESULTS:-10}
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./s3_all_docs:/app/s3_all_docs
+      - ./docs:/app/docs
+      - ./cache:/app/cache
+    depends_on:
+      - ollama
+      - api
+
+  cli:
+    build: .
+    entrypoint: ["python", "s3ai_query.py"]
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - QUICK_SEARCH_MAX_RESULTS=${QUICK_SEARCH_MAX_RESULTS:-10}
+    volumes:
+      - ./s3_all_docs:/app/s3_all_docs
+      - ./docs:/app/docs
+      - ./cache:/app/cache
     depends_on:
       - ollama
 

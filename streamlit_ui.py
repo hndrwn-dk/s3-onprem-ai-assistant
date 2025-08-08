@@ -137,7 +137,11 @@ Answer:"""
                     # By default, skip LLM formatting for fastest UX
                     use_ai_format = st.session_state.get("use_ai_format", False)
                     if use_ai_format:
-                        answer = llm(prompt)
+                        import concurrent.futures
+                        from config import LLM_TIMEOUT_SECONDS
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                            fut = ex.submit(llm, prompt)
+                            answer = fut.result(timeout=LLM_TIMEOUT_SECONDS)
                     else:
                         answer = quick_result
                     progress_bar.progress(100)
@@ -148,9 +152,12 @@ Answer:"""
                     response_cache.set(query, answer, "quick_search")
                     with st.expander("Raw bucket data"):
                         st.code(quick_result)
-                    with st.expander("Performance Details"):
-                        st.write("Source: Quick bucket search")
-                        st.write(f"Response time: {rt:.2f} seconds")
+                except concurrent.futures.TimeoutError:
+                    progress_bar.progress(100)
+                    status_text.empty()
+                    rt = time.time() - start_time
+                    st.warning(f"LLM formatting timed out after {LLM_TIMEOUT_SECONDS}s. Showing raw results.")
+                    st.code(quick_result)
                 except Exception as e:
                     progress_bar.progress(100)
                     status_text.empty()
@@ -169,7 +176,11 @@ Answer:"""
                     qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
                     progress_bar.progress(80)
                     status_text.text("AI processing...")
-                    response = qa_chain.run(query)
+                    import concurrent.futures
+                    from config import LLM_TIMEOUT_SECONDS
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                        fut = ex.submit(qa_chain.run, query)
+                        response = fut.result(timeout=LLM_TIMEOUT_SECONDS)
                     if response and response.strip():
                         progress_bar.progress(100)
                         status_text.empty()

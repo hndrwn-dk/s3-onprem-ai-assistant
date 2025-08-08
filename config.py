@@ -23,6 +23,7 @@ CACHE_TTL_HOURS = int(os.getenv("CACHE_TTL_HOURS", "24"))
 
 # Quick search settings
 QUICK_SEARCH_MAX_RESULTS = int(os.getenv("QUICK_SEARCH_MAX_RESULTS", "10"))
+QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK = os.getenv("QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK", "true").lower() in ("1", "true", "yes")
 
 # LLM model configuration
 MODEL = os.getenv("MODEL", "phi3:mini")

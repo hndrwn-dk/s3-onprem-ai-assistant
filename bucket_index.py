@@ -3,7 +3,7 @@
 import os
 import re
 from collections import defaultdict
-from config import FLATTENED_TXT_PATH, DOCS_PATH, QUICK_SEARCH_MAX_RESULTS
+from config import FLATTENED_TXT_PATH, DOCS_PATH, QUICK_SEARCH_MAX_RESULTS, QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK
 from utils import logger
 
 
@@ -92,8 +92,8 @@ class BucketIndex:
             if label_results:
                 results.extend(label_results)
 
-        # General keyword search
-        if not results:
+        # General keyword search (optional)
+        if not results and QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK:
             keywords = re.findall(r'\b([\w\-:\.]+)\b', query_lower)
             for keyword in keywords:
                 if len(keyword) > 2:  # Skip short words

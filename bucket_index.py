@@ -3,7 +3,7 @@
 import os
 import re
 from collections import defaultdict
-from config import FLATTENED_TXT_PATH, DOCS_PATH
+from config import FLATTENED_TXT_PATH, DOCS_PATH, QUICK_SEARCH_MAX_RESULTS
 from utils import logger
 
 
@@ -100,14 +100,14 @@ class BucketIndex:
                     for line_num, line in self.all_lines:
                         if keyword in line.lower():
                             results.append((line_num, line))
-                            if len(results) >= 10:  # Limit results
+                            if len(results) >= QUICK_SEARCH_MAX_RESULTS:
                                 break
                     if results:
                         break
 
         if results:
             # Remove duplicates and format
-            unique_results = list(dict.fromkeys(results))[:10]
+            unique_results = list(dict.fromkeys(results))[:QUICK_SEARCH_MAX_RESULTS]
             return '\n'.join([f"Line {num}: {line}" for num, line in unique_results])
 
         return ""

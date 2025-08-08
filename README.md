@@ -1,4 +1,4 @@
-# ⚡ S3 On-Prem AI Assistant - Speed Optimized
+# S3 On-Prem AI Assistant - Speed Optimized
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![LangChain](https://img.shields.io/badge/LangChain-0.1%2B-green.svg)](https://python.langchain.com/)
@@ -11,36 +11,36 @@
 
 A **lightning-fast**, fully offline-capable AI assistant for answering operational, admin, and troubleshooting questions for on-premises S3-compatible platforms. **15-60x faster** than typical implementations with advanced caching and optimization.
 
-## ☕ Support Me
+## Support Me
 
 If you find this project helpful, you can support me here:
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-yellow?style=for-the-badge&logo=buymeacoffee&logoColor=white)](https://buymeacoffee.com/hendrawan)
 
 
-## 🏢 Supported Platforms
+## Supported Platforms
 
-- 📦 **Cloudian HyperStore**
-- 🧊 **Huawei OceanStor** 
-- ⚡ **Pure FlashBlade**
-- 🏢 **IBM Cloud Object Storage**
-- 🐳 **MinIO**
-- 🌐 **Dell ECS**
-- 📊 **NetApp StorageGRID**
+- **Cloudian HyperStore**
+- **Huawei OceanStor** 
+- **Pure FlashBlade**
+- **IBM Cloud Object Storage**
+- **MinIO**
+- **Dell ECS**
+- **NetApp StorageGRID**
 - And more S3-compatible storage systems
 
-## ⚡ Key Features
+## Key Features
 
-- 🚀 **Lightning Fast**: Subsecond responses with multi-tier caching
-- 🧠 **Smart Search**: Vector + pre-indexed + fallback search
-- 📱 **Multi-Interface**: CLI, Web UI, and REST API
-- 🔒 **Fully Offline**: No cloud dependency, runs entirely on-premises
-- 📊 **Performance Monitoring**: Built-in timing and metrics
-- 🎯 **Intelligent Fallbacks**: Progressive search strategy
-- 💾 **Response Caching**: Instant answers for repeated queries
-- 🔍 **Document Types**: PDF, TXT, JSON, MD support
+- **Lightning Fast**: Subsecond responses with multi-tier caching
+- **Smart Search**: Vector + pre-indexed + fallback search
+- **Multi-Interface**: CLI, Web UI, and REST API
+- **Fully Offline**: No cloud dependency, runs entirely on-premises
+- **Performance Monitoring**: Built-in timing and metrics
+- **Intelligent Fallbacks**: Progressive search strategy
+- **Response Caching**: Instant answers for repeated queries
+- **Document Types**: PDF, TXT, JSON, MD support
 
-## 🚀 Performance Improvements
+## Performance Improvements
 
 | Query Type | Before | After | Improvement |
 |-----------|--------|--------|-------------|
@@ -49,54 +49,281 @@ If you find this project helpful, you can support me here:
 | **Vector search** | 5-15s | 1-3s | **5-10x faster** |
 | **Model loading** | 5-10s | 2-5s | **2-3x faster** |
 
-**Overall: 15-60x faster responses!** 🚀
+## Architecture Overview
 
----
-
-## 📁 Project Structure (Visual)
-
-```bash
-s3_onprem_ai_assistant/
-├── 🔧 Core Files
-│   ├── config.py               # Optimized settings
-│   ├── model_cache.py          # Model caching system
-│   ├── response_cache.py       # Response caching
-│   ├── bucket_index.py         # Fast bucket search
-│   └── utils.py                # Optimized utilities
-├── 🏗️ Build & Processing
-│   └── build_embeddings_all.py # Optimized embedding builder
-├── 🖥️ User Interfaces
-│   ├── s3ai_query.py           # Ultra-fast CLI
-│   ├── api.py                  # Lightning-fast API
-│   └── streamlit_ui.py         # Ultra-fast Web UI
-├── 📄 Documentation
-│   └── docs/                   # Place your files here
-│       ├── *.pdf               # Admin guides
-│       ├── *.json              # Metadata files
-│       ├── *.txt               # Text documents
-│       └── *.md                # Markdown files
-└── 🗂️ Auto-generated
-    ├── cache/                  # Response cache
-    ├── s3_all_docs/           # Vector store
-    └── s3_all_chunks.pkl      # Document chunks
+```
+Query Input
+    ↓
+[Input Validation & Security]
+    ↓
+[1. Cache Layer] ←→ Redis (Optional)
+    ↓ (miss)
+[2. Quick Bucket Search] ←→ Pre-indexed Metadata
+    ↓ (miss)
+[3. Vector Search] ←→ FAISS + HuggingFace Embeddings
+    ↓ (miss)
+[4. Text Fallback] ←→ Raw Text Search
+    ↓
+[AI Response Generation] ←→ Ollama (PHI3:mini)
+    ↓
+[Response Caching]
+    ↓
+JSON Response
 ```
 
----
+### Multi-Tier Search Strategy
 
-## 🔧 Requirements
+1. **Cache Layer** (0.01s): Instant responses for repeated queries
+2. **Quick Bucket Search** (0.1-0.5s): Pre-indexed department/label searches
+3. **Vector Search** (1-3s): Semantic similarity with FAISS
+4. **Text Fallback** (2-4s): Keyword matching in raw documents
 
-- **Python**: 3.8+ (Recommended: 3.9-3.11)
-- **RAM**: Minimum 8GB (Recommended: 16GB+)
-- **Storage**: 5GB+ for models and cache
-- **Ollama**: For local LLM inference
+## Quick Start
 
----
-
-## 🚀 Quick Start
-
-### 1️⃣ Clone and Setup
+### Option 1: Docker (Recommended)
 
 ```bash
+# Clone repository
+git clone https://github.com/hndrwn-dk/s3-onprem-ai-assistant.git
+cd s3-onprem-ai-assistant
+
+# Place your documents in docs/
+cp your-s3-docs/* docs/
+
+# Start all services
+docker-compose up -d
+
+# Access interfaces
+# Web UI: http://localhost:8501
+# API: http://localhost:8000
+# API Docs: http://localhost:8000/docs
+```
+
+### Option 2: Manual Installation
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Install Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull model
+ollama pull phi3:mini
+
+# Place documents and build embeddings
+mkdir docs && cp your-documents/* docs/
+python build_embeddings_all.py
+
+# Start services
+python api.py &
+streamlit run streamlit_ui.py
+```
+
+## Project Structure
+
+```
+s3-onprem-ai-assistant/
+├── api.py                 # FastAPI REST API server
+├── streamlit_ui.py        # Streamlit web interface
+├── s3ai_query.py         # Command-line interface
+├── model_cache.py        # LLM and vector store caching
+├── response_cache.py     # Response caching system
+├── bucket_index.py       # Quick bucket search index
+├── utils.py              # Document loading and utilities
+├── config.py            # Configuration management
+├── validation.py        # Input validation and security
+├── build_embeddings_all.py # Embedding generation script
+├── requirements.txt     # Python dependencies
+├── Dockerfile          # Container image definition
+├── docker-compose.yml  # Multi-service deployment
+├── docs/               # Your documents go here
+├── s3_all_docs/        # Generated vector embeddings
+├── cache/              # Response cache storage
+├── tests/              # Test suite
+└── logs/               # Application logs
+```
+
+## Usage Examples
+
+### Web Interface
+- Upload documents via the sidebar
+- Ask questions in natural language
+- View performance metrics and cache stats
+- Browse query history
+
+### API Interface
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Ask a question
+curl -X POST "http://localhost:8000/ask" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "show all buckets under dept: engineering"}'
+
+# Get performance metrics
+curl http://localhost:8000/metrics
+```
+
+### CLI Interface
+
+```bash
+# Direct query
+python s3ai_query.py "show buckets with label: production"
+
+# Interactive mode
+python s3ai_query.py
+> Enter your question: how to configure S3 access policies?
+```
+
+## Sample Queries
+
+### Bucket Management
+```
+"show all buckets under dept: engineering"
+"find buckets with label: production"
+"list buckets created by user: admin"
+"show buckets with size > 100GB"
+```
+
+### Operational Queries
+```
+"how to configure S3 access policies?"
+"what are the backup procedures for critical buckets?"
+"how to set up replication between sites?"
+"troubleshoot slow S3 performance"
+```
+
+### Administrative Tasks
+```
+"how to add new users to S3?"
+"what are the monitoring best practices?"
+"how to upgrade Cloudian software?"
+"configure SSL certificates for S3"
+```
+
+## Configuration
+
+### Environment Variables
+
+```bash
+# Core Configuration
+export S3AI_LOG_LEVEL=INFO
+export S3AI_LLM_MODEL=phi3:mini
+export S3AI_OLLAMA_BASE_URL=http://localhost:11434
+
+# Performance Tuning
+export S3AI_VECTOR_SEARCH_K=5
+export S3AI_CHUNK_SIZE=1000
+export S3AI_CHUNK_OVERLAP=100
+
+# Security Settings
+export S3AI_RATE_LIMIT_PER_MINUTE=30
+export S3AI_MAX_QUERY_LENGTH=2000
+export S3AI_MAX_FILE_SIZE_MB=100
+
+# API Configuration
+export S3AI_API_HOST=0.0.0.0
+export S3AI_API_PORT=8000
+export S3AI_DEBUG_MODE=false
+```
+
+### Advanced Configuration
+
+See [config.py](config.py) for the complete configuration dataclass with validation.
+
+## Security Features
+
+### Input Validation
+- Query sanitization and length limits
+- File path validation to prevent directory traversal
+- File type and size restrictions
+- XSS and code injection prevention
+
+### API Security
+- Rate limiting per IP address
+- CORS configuration for trusted origins
+- Input validation with Pydantic models
+- Comprehensive error handling
+
+### Infrastructure Security
+- Non-root Docker containers
+- Secure deserialization disabled
+- Environment variable configuration
+- Comprehensive logging and monitoring
+
+## Performance Optimization
+
+### Caching Strategy
+- **Response Cache**: Stores AI-generated answers
+- **Model Cache**: Pre-loads LLM and embeddings
+- **Quick Index**: Pre-computed bucket searches
+- **Vector Cache**: FAISS similarity search optimization
+
+### Memory Management
+- Lazy model loading
+- Configurable chunk sizes
+- Vector search result limits
+- Automatic cache cleanup
+
+### Speed Optimizations
+- Concurrent document processing
+- Streaming responses
+- Background model preloading
+- Progressive search fallbacks
+
+## Testing
+
+### Comprehensive Test Suite
+
+```bash
+# Run all tests
+python run_tests.py
+
+# Run specific test categories
+python -m pytest tests/test_validation.py -v
+python -m pytest tests/test_api.py -v
+
+# Run with coverage
+python -m pytest tests/ --cov=. --cov-report=html
+```
+
+### Test Categories
+- **Security Tests**: Input validation, path traversal, XSS prevention
+- **API Tests**: Endpoint functionality, rate limiting, error handling
+- **Performance Tests**: Response times, caching, concurrent requests
+- **Integration Tests**: End-to-end workflows
+
+## Deployment
+
+### Production Deployment
+
+```bash
+# Production with monitoring
+docker-compose --profile production --profile monitoring up -d
+
+# Manual deployment
+pip install -r requirements.txt
+python build_embeddings_all.py
+gunicorn api:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+### Monitoring
+- **Health endpoints**: `/health`, `/metrics`, `/cache/stats`
+- **Prometheus integration**: Built-in metrics export
+- **Structured logging**: JSON format with performance data
+- **Performance tracking**: Response times and cache hit rates
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide.
+
+## Development
+
+### Setup Development Environment
+
+```bash
+# Clone and setup
 git clone https://github.com/hndrwn-dk/s3-onprem-ai-assistant.git
 cd s3-onprem-ai-assistant
 
@@ -106,294 +333,114 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Install development tools
+pip install pytest pytest-cov mypy black isort
+
+# Setup pre-commit hooks
+pre-commit install
 ```
 
-### 2️⃣ Install Ollama + Fast Model
+### Code Quality
+- **Type checking**: MyPy static analysis
+- **Code formatting**: Black and isort
+- **Testing**: Pytest with coverage
+- **Security**: Bandit security linting
+- **Documentation**: Comprehensive docstrings
 
-```bash
-# Install Ollama
-curl -fsSL https://ollama.com/install.sh | sh
+## Contributing
 
-# Pull the optimized model (much faster than mistral)
-ollama pull phi3:mini
-```
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Add tests for new functionality
+5. Run the test suite (`python run_tests.py`)
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
 
-### 3️⃣ Prepare Your Documents
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
-```bash
-# Place your files in docs/
-docs/
-├── cloudian_admin_guide.pdf
-├── minio_operations_manual.pdf
-├── sample_bucket_metadata_converted.txt
-└── other_documents...
-```
-
-### 4️⃣ Build Optimized Index
-
-```bash
-# Build vector embeddings with optimization
-python build_embeddings_all.py
-```
-
-### 5️⃣ Start Querying!
-
-```bash
-# Ultra-fast CLI (recommended for speed)
-python s3ai_query.py "show all buckets under dept: engineering"
-
-# Web UI with progress indicators
-streamlit run streamlit_ui.py
-
-# REST API
-python api.py
-# Visit: http://localhost:8000/docs
-```
-
----
-
-## 🧠 Advanced Search Architecture
-
-### Multi-Tier Speed Strategy
-
-```
-Query → Cache Check → Quick Bucket Search → Vector Search → Text Fallback
-  ↓         ↓              ↓                 ↓             ↓
-0.01s    0.1-0.5s       1-3s              2-5s        Last Resort
-```
-
-### 1️⃣ **Cache Layer** (Instant)
-- Response caching with TTL
-- Instant answers for repeated queries
-- Automatic cache management
-
-### 2️⃣ **Quick Bucket Search** (0.1-0.5s)
-- Pre-indexed department/label searches
-- Pattern matching for common queries
-- Optimized for bucket metadata
-
-### 3️⃣ **Vector Search** (1-3s)
-- FAISS-powered semantic search
-- Optimized chunking strategy
-- Reduced search parameters
-
-### 4️⃣ **Text Fallback** (2-5s)
-- Direct text matching
-- Context-aware responses
-- Comprehensive coverage
-
----
-
-## 💬 Example Queries
-
-| Category | Query | Expected Response Time |
-|----------|-------|----------------------|
-| 🔍 **Bucket Lookup** | `"show all buckets under dept: engineering"` | **0.1-0.5s** |
-| 🏷️ **Label Search** | `"find buckets with label: backup"` | **0.1-0.5s** |
-| 🔧 **Troubleshooting** | `"How to fix S3 error code 403?"` | **1-3s** |
-| 📊 **Metadata** | `"Show requestor_email for Bucket-001"` | **0.1-0.5s** |
-| 🛠️ **Admin Tasks** | `"How to purge versioned bucket in Cloudian?"` | **1-3s** |
-| 🔄 **Cached Queries** | Any previously asked question | **0.01s** |
-
----
-
-## 🔌 API Usage
-
-### REST API Examples
-
-```bash
-# Health check
-curl -X GET "http://localhost:8000/health"
-
-# Query with performance metrics
-curl -X POST "http://localhost:8000/ask" \
-  -H "Content-Type: application/json" \
-  -d '{"question": "show all buckets under dept: engineering"}'
-
-# Response includes timing
-{
-  "answer": "Here are the buckets under dept: engineering...",
-  "source": "quick_search",
-  "response_time": 0.23
-}
-```
-
-### Postman Collection
-
-```json
-{
-  "info": {
-    "name": "S3 On-Prem AI Assistant v2.2.6 - Speed Optimized",
-    "description": "Lightning-fast queries with performance metrics"
-  },
-  "item": [
-    {
-      "name": "Fast Department Search",
-      "request": {
-        "method": "POST",
-        "header": [{"key": "Content-Type", "value": "application/json"}],
-        "body": {
-          "mode": "raw",
-          "raw": "{\"question\": \"show all buckets under dept: engineering\"}"
-        },
-        "url": "http://localhost:8000/ask"
-      }
-    },
-    {
-      "name": "Performance Health Check",
-      "request": {
-        "method": "GET",
-        "url": "http://localhost:8000/health"
-      }
-    }
-  ]
-}
-```
-
----
-
-## 🖥️ Web UI Features
-
-### Performance Dashboard
-- ⚡ **Real-time timing metrics**
-- 📊 **Performance indicators**
-- 🔄 **Progress tracking**
-- 📈 **Response source tracking**
-
-### User Experience
-- 🎯 **Instant cache hits**
-- 🔍 **Progressive search indicators**
-- 📱 **Responsive design**
-- 🗂️ **Query history**
-
----
-
-## 🔧 Configuration
-
-### Performance Settings (`config.py`)
-
-```python
-# Speed optimizations
-VECTOR_SEARCH_K = 3      # Reduced from 5 for speed
-CHUNK_SIZE = 800         # Optimized chunk size
-CHUNK_OVERLAP = 100      # Optimized overlap
-CACHE_TTL_HOURS = 24     # Response cache TTL
-```
-
-### Model Configuration
-
-```python
-# Fast model settings
-MODEL = "phi3:mini"      # Much faster than mistral
-TEMPERATURE = 0.3        # Balanced creativity/speed
-NUM_PREDICT = 512        # Limit response length
-```
-
----
-
-## 🧪 Performance Monitoring
-
-### Built-in Timing
-
-```python
-# Automatic timing decorators
-@timing_decorator
-def your_function():
-    # Function automatically timed
-    pass
-```
-
-### Performance Metrics
-
-- 📊 **Model load times**
-- ⚡ **Query response times**
-- 🎯 **Cache hit rates**
-- 📈 **Search tier usage**
-
----
-
-## 📋 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
-1. **Slow first query**: Models loading (normal, cached afterward)
-2. **No phi3:mini model**: Run `ollama pull phi3:mini`
-3. **Empty responses**: Rebuild embeddings with `python build_embeddings_all.py`
-4. **Memory issues**: Reduce `CHUNK_SIZE` in config.py
-
-### Performance Optimization
-
+**Model Loading Errors**
 ```bash
-# Clear cache for fresh start
-rm -rf cache/
+# Check Ollama status
+curl http://localhost:11434/api/tags
 
-# Rebuild optimized embeddings
-python build_embeddings_all.py
-
-# Check model cache status
-python -c "from model_cache import ModelCache; print(ModelCache.get_load_times())"
+# Reinstall model
+ollama pull phi3:mini
 ```
 
----
+**Vector Store Issues**
+```bash
+# Rebuild embeddings
+rm -rf s3_all_docs/
+python build_embeddings_all.py
+```
 
-## 🎯 Version History
+**Performance Issues**
+```bash
+# Clear cache
+curl -X POST http://localhost:8000/cache/clear
 
-### v2.2.6 - Speed Optimized (Current)
-- ⚡ **15-60x performance improvement**
-- 🧠 **Multi-tier caching system**
-- 🔍 **Pre-indexed bucket search**
-- 📊 **Performance monitoring**
-- 🚀 **PHI3-mini model support**
+# Check system resources
+docker stats
+```
 
-### v2.2.4 - Enhanced
-- 📄 **Multi-format document support**
-- 🔄 **Improved fallback system**
-- 🐛 **Bug fixes and stability**
+### Debug Mode
 
----
+```bash
+export S3AI_LOG_LEVEL=DEBUG
+export S3AI_DEBUG_MODE=true
+python api.py
+```
 
-## 🧪 Tested Environment
+## Changelog
 
-- ✅ **Python 3.8-3.11**
-- ✅ **Ubuntu 20.04+ / CentOS 7+ / Windows 10+**
-- ✅ **LangChain 0.1+**
-- ✅ **Streamlit 1.29+**
-- ✅ **FastAPI 0.108+**
-- ✅ **Ollama (PHI3-mini)**
+### v2.2.7 - Latest (Security & Performance Update)
+- **SECURITY**: Fixed dangerous deserialization vulnerability
+- **NEW**: Document upload via Streamlit UI
+- **NEW**: Automatic embedding building
+- **NEW**: Enhanced input validation and sanitization
+- **NEW**: Comprehensive test suite
+- **NEW**: Docker deployment with monitoring
+- **IMPROVED**: Enhanced error handling and logging
+- **IMPROVED**: Configuration management with validation
+- **IMPROVED**: Performance monitoring and metrics
 
----
+### v2.2.6 - Performance Optimization
+- Multi-tier caching system (15-60x faster)
+- Quick bucket search pre-indexing
+- Response caching with TTL
+- Model loading optimization
+- Progressive search fallbacks
 
-## 📘 License
+### v2.2.5 - Security Enhancement
+- Input validation and sanitization
+- Rate limiting implementation
+- CORS configuration
+- Error handling improvements
+
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
----
+## Acknowledgments
 
-## 🤝 Contributing
-
-We welcome contributions! Areas of interest:
-
-- 🏢 **Additional S3 vendor support**
-- ⚡ **Performance optimizations**
-- 🧠 **New AI models**
-- 📊 **Enhanced monitoring**
-- 🔍 **Better search algorithms**
-
-### How to Contribute
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+- **Ollama** for local LLM inference
+- **LangChain** for AI framework
+- **FAISS** for vector similarity search
+- **HuggingFace** for embeddings
+- **FastAPI** for high-performance API
+- **Streamlit** for rapid UI development
 
 ---
 
+**Questions or issues?** Open an issue on GitHub or check the [troubleshooting guide](DEPLOYMENT.md#troubleshooting).
 
-<div align="center">
+**Need help with deployment?** See the comprehensive [deployment guide](DEPLOYMENT.md).
 
-**⚡ Built for Speed • 🔒 Privacy-First • 🚀 Production-Ready**
-
-*Made with ❤️ for the S3 storage community*
-
-</div>
+**Want to contribute?** Read the [contributing guidelines](CONTRIBUTING.md).

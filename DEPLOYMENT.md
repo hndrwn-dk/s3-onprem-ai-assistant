@@ -1,8 +1,8 @@
-# 🚀 S3 On-Premises AI Assistant - Deployment Guide v2.2.7
+# S3 On-Premises AI Assistant - Deployment Guide v2.2.7
 
 Complete deployment guide for the secure, production-ready S3 AI Assistant.
 
-## 📋 Prerequisites
+## Prerequisites
 
 ### System Requirements
 - **CPU**: 4+ cores recommended
@@ -16,7 +16,7 @@ Complete deployment guide for the secure, production-ready S3 AI Assistant.
 - **Python** 3.8+ (for local development)
 - **Git** for cloning the repository
 
-## 🐳 Docker Deployment (Recommended)
+## Docker Deployment (Recommended)
 
 ### Quick Start with Docker Compose
 
@@ -53,50 +53,16 @@ docker-compose --profile production up -d
 # Start with monitoring (includes Prometheus)
 docker-compose --profile monitoring up -d
 
-# Start with both
+# Start with both production and monitoring
 docker-compose --profile production --profile monitoring up -d
 ```
 
-### Environment Configuration
+## Manual Installation
 
-Create a `.env` file for custom configuration:
-
-```bash
-# API Configuration
-S3AI_API_HOST=0.0.0.0
-S3AI_API_PORT=8000
-S3AI_LOG_LEVEL=INFO
-S3AI_DEBUG=false
-
-# Model Configuration
-S3AI_LLM_MODEL=phi3:mini
-OLLAMA_BASE_URL=http://ollama:11434
-S3AI_EMBED_MODEL=sentence-transformers/all-MiniLM-L6-v2
-
-# Performance Settings
-S3AI_VECTOR_SEARCH_K=3
-S3AI_CHUNK_SIZE=800
-S3AI_CHUNK_OVERLAP=100
-S3AI_CACHE_TTL_HOURS=24
-
-# Security Settings
-S3AI_RATE_LIMIT=30
-S3AI_MAX_QUERY_LENGTH=2000
-S3AI_MAX_FILE_SIZE_MB=100
-
-# Allowed origins (comma-separated)
-S3AI_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-
-# Trusted hosts (comma-separated)
-S3AI_TRUSTED_HOSTS=localhost,127.0.0.1,0.0.0.0,*.local
-```
-
-## 🛠️ Manual Installation
-
-### 1. System Setup
+### 1. Environment Setup
 
 ```bash
-# Clone repository
+# Clone and setup
 git clone https://github.com/hndrwn-dk/s3-onprem-ai-assistant.git
 cd s3-onprem-ai-assistant
 
@@ -108,248 +74,290 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Install and Configure Ollama
+### 2. Install Ollama
 
+**Linux/macOS:**
 ```bash
-# Install Ollama
 curl -fsSL https://ollama.com/install.sh | sh
-
-# Start Ollama service
-ollama serve &
-
-# Pull the model
-ollama pull phi3:mini
 ```
 
-### 3. Prepare Documents
+**Windows:**
+- Download from https://ollama.com/download
+- Run the installer
+
+### 3. Download Models
 
 ```bash
-# Place your documents in docs/
-mkdir -p docs
-cp your-s3-documentation/* docs/
+# Pull the PHI3 mini model
+ollama pull phi3:mini
 
-# Build vector embeddings
+# Verify model installation
+ollama list
+```
+
+### 4. Prepare Documents
+
+```bash
+# Create docs directory
+mkdir -p docs
+
+# Copy your documents
+cp /path/to/your/documents/* docs/
+
+# Build embeddings
 python build_embeddings_all.py
 ```
 
-### 4. Start Services
+### 5. Configuration
+
+Create a `.env` file:
+
+```env
+# S3 AI Assistant Configuration
+S3AI_LOG_LEVEL=INFO
+S3AI_LLM_MODEL=phi3:mini
+S3AI_OLLAMA_BASE_URL=http://localhost:11434
+S3AI_MAX_QUERY_LENGTH=2000
+S3AI_RATE_LIMIT_PER_MINUTE=30
+S3AI_API_HOST=0.0.0.0
+S3AI_API_PORT=8000
+S3AI_DEBUG_MODE=false
+```
+
+### 6. Start Services
 
 ```bash
 # Start API server
 python api.py
 
 # In another terminal, start Streamlit UI
-streamlit run streamlit_ui.py
+streamlit run streamlit_ui.py --server.port 8501
 
-# Or use CLI directly
+# Or use the CLI
 python s3ai_query.py "show all buckets under dept: engineering"
 ```
 
-## 🔧 Configuration Management
+## Configuration Management
 
 ### Environment Variables
 
-The application supports comprehensive configuration via environment variables:
+All configuration can be set via environment variables prefixed with `S3AI_`:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `S3AI_DOCS_PATH` | `docs` | Path to document directory |
-| `S3AI_CACHE_DIR` | `cache` | Cache directory path |
-| `S3AI_LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
-| `S3AI_API_HOST` | `0.0.0.0` | API host address |
-| `S3AI_API_PORT` | `8000` | API port number |
-| `S3AI_DEBUG` | `false` | Enable debug mode |
-| `S3AI_LLM_MODEL` | `phi3:mini` | LLM model name |
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama service URL |
-| `S3AI_RATE_LIMIT` | `30` | Rate limit per minute |
-| `S3AI_CACHE_TTL_HOURS` | `24` | Cache TTL in hours |
+```bash
+export S3AI_LOG_LEVEL=DEBUG
+export S3AI_LLM_MODEL=phi3:mini
+export S3AI_OLLAMA_BASE_URL=http://localhost:11434
+export S3AI_MAX_QUERY_LENGTH=2000
+export S3AI_MAX_FILE_SIZE_MB=100
+export S3AI_ALLOWED_ORIGINS="http://localhost:3000,http://127.0.0.1:3000"
+export S3AI_TRUSTED_HOSTS="localhost,127.0.0.1,*.local"
+export S3AI_RATE_LIMIT_PER_MINUTE=30
+export S3AI_API_HOST=0.0.0.0
+export S3AI_API_PORT=8000
+export S3AI_DEBUG_MODE=false
+```
 
 ### Configuration File
 
-You can also use a configuration file for complex setups:
+Alternatively, modify `config.py` directly:
 
 ```python
-# config_override.py
-from config import config
+from dataclasses import dataclass
+from config import AppConfig
 
 # Override default settings
-config.llm_temperature = 0.5
-config.vector_search_k = 5
-config.debug_mode = True
+config = AppConfig()
+config.llm_model = "llama2:7b"  # Use different model
+config.max_query_length = 5000  # Longer queries
+config.rate_limit_per_minute = 60  # Higher rate limit
 ```
 
-## 🔐 Security Configuration
+## Security Configuration
 
-### Production Security Checklist
+### 1. TLS/SSL Setup
 
-- [ ] Change default API keys (if using authentication)
-- [ ] Configure CORS origins for your domain
-- [ ] Set up TLS/SSL certificates
-- [ ] Configure firewall rules
-- [ ] Set appropriate rate limits
-- [ ] Review allowed file extensions
-- [ ] Configure log retention policies
-- [ ] Set up security monitoring
+```bash
+# Generate self-signed certificates (development only)
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
 
-### TLS/SSL Setup
-
-For production deployment with HTTPS:
-
-```yaml
-# docker-compose.override.yml
-version: '3.8'
-services:
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "443:443"
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/ssl/certs
-    depends_on:
-      - s3ai-api
+# Update docker-compose.yml to use HTTPS
+# Add volume mounts for certificates
+volumes:
+  - ./cert.pem:/app/cert.pem:ro
+  - ./key.pem:/app/key.pem:ro
 ```
 
-### Reverse Proxy Configuration
-
-Example Nginx configuration:
+### 2. Reverse Proxy (Nginx)
 
 ```nginx
 server {
     listen 443 ssl;
     server_name your-domain.com;
-
-    ssl_certificate /etc/ssl/certs/cert.pem;
-    ssl_certificate_key /etc/ssl/certs/key.pem;
-
+    
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+    
     location / {
-        proxy_pass http://s3ai-api:8000;
+        proxy_pass http://localhost:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
+    
+    location /ui {
+        proxy_pass http://localhost:8501;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
 }
 ```
 
-## 📊 Monitoring and Observability
+### 3. Security Checklist
 
-### Health Checks
+- [ ] Change default ports
+- [ ] Set up TLS/SSL certificates
+- [ ] Configure firewall rules
+- [ ] Set strong rate limits
+- [ ] Validate input file types
+- [ ] Enable access logging
+- [ ] Set up monitoring alerts
+- [ ] Regular security updates
 
-The application provides comprehensive health checks:
+## Monitoring and Logging
+
+### Built-in Endpoints
 
 ```bash
-# API health check
+# Health check
 curl http://localhost:8000/health
 
-# Get performance metrics
+# Performance metrics
 curl http://localhost:8000/metrics
 
-# Check cache statistics
+# Cache statistics
 curl http://localhost:8000/cache/stats
+```
+
+### Prometheus Integration
+
+Add to your `prometheus.yml`:
+
+```yaml
+scrape_configs:
+  - job_name: 's3ai-assistant'
+    static_configs:
+      - targets: ['localhost:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
 ```
 
 ### Log Management
 
-Logs are written to multiple locations:
+```bash
+# View application logs
+tail -f app.log
 
-- **Console output**: Real-time logging
-- **File logging**: `app.log` (configurable path)
-- **Structured logs**: JSON format for parsing
+# Docker logs
+docker-compose logs -f s3ai-api
 
-### Prometheus Metrics
-
-When using the monitoring profile:
-
-- **Prometheus**: http://localhost:9090
-- **Metrics endpoint**: http://localhost:8000/metrics
-
-Example queries:
-```promql
-# Average response time
-rate(s3ai_request_duration_seconds_sum[5m]) / rate(s3ai_request_duration_seconds_count[5m])
-
-# Request rate by endpoint
-rate(s3ai_requests_total[5m])
-
-# Cache hit rate
-rate(s3ai_cache_hits_total[5m]) / rate(s3ai_cache_requests_total[5m])
+# Structured logging format
+{
+  "timestamp": "2024-01-15T10:30:00Z",
+  "level": "INFO",
+  "message": "Query processed",
+  "query_id": "query_1705314600123",
+  "response_time": 0.45,
+  "source": "vector_search"
+}
 ```
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
 **1. Ollama Connection Failed**
 ```bash
-# Check Ollama status
+# Check if Ollama is running
 curl http://localhost:11434/api/tags
 
 # Restart Ollama
-docker-compose restart ollama
+ollama serve
+
+# Check firewall
+sudo ufw allow 11434
 ```
 
-**2. Model Not Found**
+**2. Model Loading Errors**
 ```bash
-# Pull required model
-docker-compose exec ollama ollama pull phi3:mini
+# Check available models
+ollama list
+
+# Re-download model
+ollama pull phi3:mini
+
+# Check disk space
+df -h
 ```
 
-**3. Permission Denied Errors**
+**3. Vector Store Issues**
 ```bash
-# Fix file permissions
-sudo chown -R $(id -u):$(id -g) docs/ cache/ s3_all_docs/
-```
-
-**4. Out of Memory**
-```bash
-# Reduce chunk size in configuration
-export S3AI_CHUNK_SIZE=400
-export S3AI_VECTOR_SEARCH_K=2
-```
-
-**5. Slow Performance**
-```bash
-# Clear cache
-curl -X POST http://localhost:8000/cache/clear
-
 # Rebuild embeddings
+python build_embeddings_all.py
+
+# Check embeddings directory
+ls -la s3_all_docs/
+
+# Clear and rebuild
+rm -rf s3_all_docs/
 python build_embeddings_all.py
 ```
 
-### Debug Mode
-
-Enable debug logging:
-
+**4. Permission Errors**
 ```bash
-export S3AI_DEBUG=true
-export S3AI_LOG_LEVEL=DEBUG
+# Fix file permissions
+sudo chown -R $USER:$USER docs/
+chmod -R 755 docs/
 
-# Or in Docker
-docker-compose up -d -e S3AI_DEBUG=true -e S3AI_LOG_LEVEL=DEBUG
+# Docker permission issues
+sudo usermod -aG docker $USER
+newgrp docker
 ```
 
 ### Performance Tuning
 
-**Memory Optimization:**
-```bash
-# Reduce memory usage
-export S3AI_CHUNK_SIZE=400
-export S3AI_CHUNK_OVERLAP=50
-export S3AI_VECTOR_SEARCH_K=2
+**1. Memory Optimization**
+```python
+# Reduce vector search results
+VECTOR_SEARCH_K = 3  # Default: 5
+
+# Limit chunk size
+CHUNK_SIZE = 500  # Default: 1000
+CHUNK_OVERLAP = 50  # Default: 100
 ```
 
-**Speed Optimization:**
+**2. Model Optimization**
 ```bash
-# Increase cache TTL
-export S3AI_CACHE_TTL_HOURS=48
-
-# Use faster model (if available)
-export S3AI_LLM_MODEL=phi3:mini-q4
+# Use smaller model for faster responses
+ollama pull phi3:mini  # 2.3GB
+# ollama pull llama2:7b  # 3.8GB (more accurate)
 ```
 
-## 📈 Scaling and High Availability
+**3. Caching Configuration**
+```python
+# Increase cache size
+CACHE_MAX_SIZE = 1000  # Default: 500
+
+# Extend cache TTL
+CACHE_TTL = 3600  # 1 hour (default: 1800)
+```
+
+## Scaling and High Availability
 
 ### Horizontal Scaling
 
@@ -360,13 +368,16 @@ services:
   s3ai-api:
     deploy:
       replicas: 3
-    
+    depends_on:
+      - redis
+      - ollama
+  
   nginx:
     image: nginx:alpine
     ports:
       - "80:80"
     volumes:
-      - ./nginx-lb.conf:/etc/nginx/nginx.conf
+      - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - s3ai-api
 ```
@@ -375,9 +386,9 @@ services:
 
 ```nginx
 upstream s3ai_backend {
-    server s3ai-api-1:8000;
-    server s3ai-api-2:8000;
-    server s3ai-api-3:8000;
+    server localhost:8000;
+    server localhost:8001;
+    server localhost:8002;
 }
 
 server {
@@ -388,12 +399,11 @@ server {
 }
 ```
 
-## 🚀 CI/CD Pipeline
+## CI/CD Pipeline
 
 ### GitHub Actions Example
 
 ```yaml
-# .github/workflows/deploy.yml
 name: Deploy S3 AI Assistant
 
 on:
@@ -406,64 +416,104 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Deploy to staging
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Run Tests
         run: |
-          docker-compose -f docker-compose.yml -f docker-compose.staging.yml up -d
-          
-      - name: Run health checks
+          pip install -r requirements.txt
+          python run_tests.py
+      
+      - name: Build Docker Image
         run: |
-          sleep 30
-          curl -f http://localhost:8000/health
-          
-      - name: Run tests
+          docker build -t s3ai:${{ github.sha }} .
+          docker tag s3ai:${{ github.sha }} s3ai:latest
+      
+      - name: Deploy to Production
         run: |
-          docker-compose exec -T s3ai-api pytest tests/
+          docker-compose down
+          docker-compose up -d
 ```
 
-## 📚 Backup and Recovery
+## Backup and Recovery
 
 ### Data Backup
 
 ```bash
-# Backup vector store
-tar -czf backup-$(date +%Y%m%d).tar.gz s3_all_docs/ cache/ docs/
+# Backup documents
+tar -czf docs-backup-$(date +%Y%m%d).tar.gz docs/
 
-# Backup using Docker volumes
-docker run --rm -v s3ai_vectors:/data -v $(pwd):/backup alpine tar czf /backup/vectors-backup.tar.gz /data
+# Backup vector store
+tar -czf vectors-backup-$(date +%Y%m%d).tar.gz s3_all_docs/
+
+# Backup cache
+docker exec redis redis-cli BGSAVE
+cp /var/lib/redis/dump.rdb redis-backup-$(date +%Y%m%d).rdb
 ```
 
-### Recovery
+### Recovery Procedures
 
 ```bash
-# Restore from backup
-tar -xzf backup-20240115.tar.gz
+# Restore documents
+tar -xzf docs-backup-20240115.tar.gz
 
-# Rebuild if needed
+# Rebuild embeddings
 python build_embeddings_all.py
+
+# Restart services
+docker-compose restart
 ```
 
-## 🎯 Production Checklist
+## Production Checklist
 
-- [ ] Environment variables configured
+### Before Deployment
+
+- [ ] Security configuration completed
 - [ ] TLS/SSL certificates installed
 - [ ] Firewall rules configured
-- [ ] Rate limiting enabled
-- [ ] Monitoring setup
-- [ ] Backup strategy implemented
-- [ ] Log rotation configured
-- [ ] Health checks working
-- [ ] Documentation deployed
-- [ ] Security scan completed
+- [ ] Monitoring setup verified
+- [ ] Backup procedures tested
+- [ ] Performance tuning applied
+- [ ] Load testing completed
+- [ ] Documentation updated
+- [ ] Team training completed
 
----
+### Post-Deployment
 
-## 📞 Support
+- [ ] Health checks passing
+- [ ] Monitoring alerts configured
+- [ ] Log aggregation working
+- [ ] Backup automation verified
+- [ ] Performance baselines established
+- [ ] User access confirmed
+- [ ] Documentation distributed
+- [ ] Support procedures activated
 
-For deployment issues:
+## Support and Maintenance
 
-1. Check the [troubleshooting section](#troubleshooting)
-2. Review logs: `docker-compose logs -f`
-3. Verify configuration: `curl http://localhost:8000/health`
-4. Open an issue on GitHub with detailed logs
+### Regular Maintenance Tasks
 
-**Remember**: This is a production-ready deployment with comprehensive security and monitoring features!
+```bash
+# Weekly tasks
+docker system prune -f
+python run_tests.py
+curl http://localhost:8000/health
+
+# Monthly tasks
+ollama pull phi3:mini  # Update model
+pip install -r requirements.txt --upgrade
+docker-compose pull
+```
+
+### Monitoring Checklist
+
+- [ ] Response times < 3s for 95% of queries
+- [ ] Cache hit rate > 60%
+- [ ] System memory usage < 80%
+- [ ] Disk space usage < 80%
+- [ ] Error rate < 1%
+- [ ] API availability > 99.5%
+
+For additional support, check the [GitHub repository](https://github.com/hndrwn-dk/s3-onprem-ai-assistant) or create an issue.

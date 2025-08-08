@@ -11,6 +11,7 @@ langchain-core==0.1.12
 ollama==0.1.7
 sentence-transformers==2.2.2
 transformers==4.36.2
+huggingface_hub<0.20
 
 # PyTorch (Perfect compatibility with 3.11.9)
 torch==2.1.2

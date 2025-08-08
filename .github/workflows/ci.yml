@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies (minimal)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-minimal.txt
+
+      - name: Lint (black check)
+        run: |
+          pip install black
+          black --check .
+
+      - name: Static syntax check
+        run: |
+          python -m compileall -q .
+
+      - name: Basic import check for modules that do not require heavy deps
+        run: |
+          python - <<'PY'
+          import importlib
+          for module in [
+              'response_cache', 'bucket_index', 'utils', 'config'
+          ]:
+              importlib.import_module(module)
+          print('Basic imports OK')
+          PY

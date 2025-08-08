@@ -223,6 +223,12 @@ Answer:"""
                         st.error(f"No Data Available ({rt:.2f}s)")
                         st.write("No data available to answer your question.")
 
+    except Exception as e:
+        progress_bar.progress(100)
+        status_text.empty()
+        st.error(f"Error: {str(e)}")
+        logger.error(f"Unexpected error: {e}")
+
 # History
 if st.session_state.query_history:
     st.subheader("Recent Queries")

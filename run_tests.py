@@ -37,21 +37,21 @@ class TestRunner:
     def print_test(self, test_name: str, status: str, details: str = ""):
         """Print test result"""
         if status == "PASS":
-            print(f"{Colors.GREEN}✓{Colors.END} {test_name}")
+            print(f"{Colors.GREEN}[PASS]{Colors.END} {test_name}")
             if details:
                 print(f"  {Colors.WHITE}{details}{Colors.END}")
             self.passed += 1
         elif status == "FAIL":
-            print(f"{Colors.RED}✗{Colors.END} {test_name}")
+            print(f"{Colors.RED}[FAIL]{Colors.END} {test_name}")
             if details:
                 print(f"  {Colors.RED}{details}{Colors.END}")
             self.failed += 1
         elif status == "SKIP":
-            print(f"{Colors.YELLOW}⚠{Colors.END} {test_name} (SKIPPED)")
+            print(f"{Colors.YELLOW}[SKIP]{Colors.END} {test_name}")
             if details:
                 print(f"  {Colors.YELLOW}{details}{Colors.END}")
         else:  # INFO
-            print(f"{Colors.BLUE}ℹ{Colors.END} {test_name}")
+            print(f"{Colors.BLUE}[INFO]{Colors.END} {test_name}")
             if details:
                 print(f"  {Colors.WHITE}{details}{Colors.END}")
     
@@ -331,14 +331,14 @@ class TestRunner:
         print(f"{Colors.WHITE}Duration: {total_time:.2f} seconds{Colors.END}")
         
         if self.failed == 0:
-            print(f"\n{Colors.GREEN}{Colors.BOLD}🎉 ALL TESTS PASSED! Ready for release! 🎉{Colors.END}")
-            print(f"{Colors.GREEN}✓ Security features implemented{Colors.END}")
-            print(f"{Colors.GREEN}✓ Production configuration ready{Colors.END}")
-            print(f"{Colors.GREEN}✓ Docker deployment available{Colors.END}")
-            print(f"{Colors.GREEN}✓ Comprehensive testing completed{Colors.END}")
+            print(f"\n{Colors.GREEN}{Colors.BOLD}ALL TESTS PASSED! Ready for release!{Colors.END}")
+            print(f"{Colors.GREEN}Security features implemented{Colors.END}")
+            print(f"{Colors.GREEN}Production configuration ready{Colors.END}")
+            print(f"{Colors.GREEN}Docker deployment available{Colors.END}")
+            print(f"{Colors.GREEN}Comprehensive testing completed{Colors.END}")
             return True
         else:
-            print(f"\n{Colors.RED}{Colors.BOLD}❌ {self.failed} TEST(S) FAILED{Colors.END}")
+            print(f"\n{Colors.RED}{Colors.BOLD}{self.failed} TEST(S) FAILED{Colors.END}")
             print(f"{Colors.YELLOW}Please fix the failing tests before release.{Colors.END}")
             return False
 

@@ -2,12 +2,13 @@
 
 import streamlit as st
 import time
+import os
 from model_cache import ModelCache
 from response_cache import response_cache
 from bucket_index import bucket_index
 from langchain.chains import RetrievalQA
 from utils import logger, search_in_fallback_text, load_txt_documents
-from config import VECTOR_SEARCH_K, RECENT_QUESTIONS_FILE
+from config import VECTOR_SEARCH_K, RECENT_QUESTIONS_FILE, DOCS_PATH
 
 st.set_page_config(
     page_title="S3 On-Prem AI Assistant",
@@ -38,6 +39,40 @@ with st.sidebar:
             st.metric("LLM Load Time", f"{load_times['llm']:.2f}s")
         if 'vector_store' in load_times:
             st.metric("Vector Store", f"{load_times['vector_store']:.2f}s")
+
+# Uploader and build section
+st.markdown("---")
+st.subheader("Upload documentation and rebuild index")
+uploaded_files = st.file_uploader(
+    "Upload PDF/TXT/MD/JSON/DOCX files",
+    type=["pdf", "txt", "md", "json", "docx"],
+    accept_multiple_files=True,
+)
+if uploaded_files:
+    os.makedirs(DOCS_PATH, exist_ok=True)
+    saved = []
+    for uf in uploaded_files:
+        save_path = os.path.join(DOCS_PATH, uf.name)
+        with open(save_path, "wb") as f:
+            f.write(uf.getbuffer())
+        saved.append(save_path)
+    st.write(f"Saved {len(saved)} file(s) to {DOCS_PATH}")
+
+if st.button("Rebuild embeddings now"):
+    with st.spinner("Rebuilding embeddings..."):
+        try:
+            # Lazy import to avoid startup cost
+            from build_embeddings_all import build_vector_index
+            build_vector_index()
+            ModelCache.reset_vector_store()
+            # Load it immediately for UI
+            ModelCache.get_vector_store()
+            st.success("Embeddings rebuilt and vector store reloaded")
+        except Exception as e:
+            st.error(f"Embedding rebuild failed: {e}")
+            logger.error(f"Embedding rebuild failed: {e}")
+
+st.markdown("---")
 
 # Initialize session state
 if 'query_history' not in st.session_state:

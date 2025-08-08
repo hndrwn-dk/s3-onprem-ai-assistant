@@ -80,5 +80,16 @@ class ModelCache:
         return cls._vector_store
 
     @classmethod
+    def reset_vector_store(cls):
+        """Reset the cached vector store so it can be reloaded after a rebuild."""
+        with cls._lock:
+            cls._vector_store = None
+            if 'vector_store' in cls._load_times:
+                del cls._load_times['vector_store']
+            if 'vector_store_error' in cls._load_times:
+                del cls._load_times['vector_store_error']
+        logger.info("Vector store cache reset")
+
+    @classmethod
     def get_load_times(cls):
         return cls._load_times

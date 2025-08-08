@@ -1,9 +1,10 @@
-# utils.py (v2.2.6) - Speed Optimized
+# utils.py (v2.3.0) - Speed Optimized
 
 import os
 import json
 import logging
 import time
+import functools
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_core.documents import Document
 from config import DOCS_PATH, FLATTENED_TXT_PATH
@@ -13,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 def timing_decorator(func):
     """Decorator to measure function execution time"""
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)

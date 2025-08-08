@@ -21,6 +21,9 @@ CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "800"))     # Reduced from 1000
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "100"))  # Reduced from 200
 CACHE_TTL_HOURS = int(os.getenv("CACHE_TTL_HOURS", "24"))
 
+# Quick search settings
+QUICK_SEARCH_MAX_RESULTS = int(os.getenv("QUICK_SEARCH_MAX_RESULTS", "10"))
+
 # LLM model configuration
 MODEL = os.getenv("MODEL", "phi3:mini")
 TEMPERATURE = float(os.getenv("TEMPERATURE", "0.3"))

@@ -68,11 +68,11 @@ def timing_decorator(func):
             result = func(*args, **kwargs)
             duration = time.time() - start_time
             performance_monitor.record_timing(operation_name, duration)
-            logger.info(f"✅ {operation_name} completed in {duration:.2f}s")
+            logger.info(f"[SUCCESS] {operation_name} completed in {duration:.2f}s")
             return result
         except Exception as e:
             duration = time.time() - start_time
-            logger.error(f"❌ {operation_name} failed after {duration:.2f}s: {e}", exc_info=True)
+            logger.error(f"[ERROR] {operation_name} failed after {duration:.2f}s: {e}", exc_info=True)
             raise
     return wrapper
 
@@ -127,7 +127,7 @@ class SafeDocumentLoader:
                 if not doc.page_content.strip():
                     logger.warning(f"Empty page found in PDF: {file_path}")
             
-            logger.info(f"✅ Loaded {len(docs)} pages from PDF: {file_path}")
+            logger.info(f"[SUCCESS] Loaded {len(docs)} pages from PDF: {file_path}")
             return docs
             
         except Exception as e:
@@ -146,7 +146,7 @@ class SafeDocumentLoader:
                     docs = loader.load()
                     
                     if docs and docs[0].page_content.strip():
-                        logger.info(f"✅ Loaded text document: {file_path} (encoding: {encoding})")
+                        logger.info(f"[SUCCESS] Loaded text document: {file_path} (encoding: {encoding})")
                         return docs
                 except UnicodeDecodeError:
                     continue
@@ -184,7 +184,7 @@ class SafeDocumentLoader:
                 }
             )
             
-            logger.info(f"✅ Loaded JSON document: {file_path}")
+            logger.info(f"[SUCCESS] Loaded JSON document: {file_path}")
             return [doc]
             
         except json.JSONDecodeError as e:
@@ -201,7 +201,7 @@ def load_documents_from_path(path: str = DOCS_PATH) -> List[Document]:
     loader = SafeDocumentLoader(path)
     
     if not os.path.exists(path):
-        logger.warning(f"📁 Path does not exist: {path}")
+        logger.warning(f"Path does not exist: {path}")
         return docs
     
     try:
@@ -228,17 +228,17 @@ def load_documents_from_path(path: str = DOCS_PATH) -> List[Document]:
                     docs.extend(file_docs)
                     
                 except DocumentLoadError as e:
-                    logger.error(f"❌ Document loading error for {file_path}: {e}")
+                    logger.error(f"[ERROR] Document loading error for {file_path}: {e}")
                     continue
                 except Exception as e:
-                    logger.error(f"❌ Unexpected error processing {file_path}: {e}", exc_info=True)
+                    logger.error(f"[ERROR] Unexpected error processing {file_path}: {e}", exc_info=True)
                     continue
     
     except Exception as e:
-        logger.error(f"❌ Error scanning directory {path}: {e}", exc_info=True)
+        logger.error(f"[ERROR] Error scanning directory {path}: {e}", exc_info=True)
         raise DocumentLoadError(f"Directory scanning failed: {e}")
     
-    logger.info(f"📚 Total documents loaded: {len(docs)} from {path}")
+    logger.info(f"Total documents loaded: {len(docs)} from {path}")
     return docs
 
 def load_txt_documents(file_path: str = FLATTENED_TXT_PATH) -> str:
@@ -265,7 +265,7 @@ def load_txt_documents(file_path: str = FLATTENED_TXT_PATH) -> str:
                             content = f.read()
                         
                         if content.strip():
-                            logger.info(f"✅ Loaded {len(content)} characters from {path} (encoding: {encoding})")
+                            logger.info(f"[SUCCESS] Loaded {len(content)} characters from {path} (encoding: {encoding})")
                             return content
                     except UnicodeDecodeError:
                         continue
@@ -279,7 +279,7 @@ def load_txt_documents(file_path: str = FLATTENED_TXT_PATH) -> str:
                 logger.error(f"Failed to load TXT file {path}: {e}")
                 continue
     
-    logger.warning(f"❌ No readable TXT file found in any of: {search_paths}")
+    logger.warning(f"[ERROR] No readable TXT file found in any of: {search_paths}")
     return ""
 
 def quick_relevance_check(query: str, text: str, threshold: int = 1) -> bool:
@@ -334,9 +334,9 @@ def search_in_fallback_text(query: str, text: str, max_results: int = 10) -> str
         result = '\n'.join([f"{line_ref}: {line_content}" for line_ref, line_content, _ in matching_lines])
         
         if result:
-            logger.info(f"✅ Fallback search found {len(matching_lines)} matches for query: {query[:50]}...")
+            logger.info(f"[SUCCESS] Fallback search found {len(matching_lines)} matches for query: {query[:50]}...")
         else:
-            logger.warning(f"❌ No fallback matches found for query: {query[:50]}...")
+            logger.warning(f"[WARNING] No fallback matches found for query: {query[:50]}...")
         
         return result
         

@@ -98,27 +98,27 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 @app.on_event("startup")
 async def startup_event():
     """Pre-load models on startup with proper error handling"""
-    logger.info("🚀 Starting S3 AI Assistant API...")
+    logger.info("[STARTUP] Starting S3 AI Assistant API...")
     try:
         # Pre-load models in background to avoid blocking startup
         loop = asyncio.get_event_loop()
         
         async def preload_models():
             try:
-                logger.info("📚 Pre-loading LLM...")
+                logger.info("[STARTUP] Pre-loading LLM...")
                 ModelCache.get_llm()
-                logger.info("📊 Pre-loading vector store...")
+                logger.info("[STARTUP] Pre-loading vector store...")
                 ModelCache.get_vector_store()
-                logger.info("✅ All models loaded successfully")
+                logger.info("[SUCCESS] All models loaded successfully")
             except Exception as e:
-                logger.error(f"❌ Error pre-loading models: {e}")
+                logger.error(f"[ERROR] Error pre-loading models: {e}")
         
         # Start preloading in background
         asyncio.create_task(preload_models())
-        logger.info("🎯 API startup completed")
+        logger.info("[SUCCESS] API startup completed")
         
     except Exception as e:
-        logger.error(f"❌ Startup error: {e}")
+        logger.error(f"[ERROR] Startup error: {e}")
 
 # Health check endpoint
 @app.get("/health", response_model=HealthResponse)
@@ -151,7 +151,7 @@ async def ask_question(
     start_time = time.time()
     query_id = f"query_{int(start_time * 1000)}"
     
-    logger.info(f"🔍 Processing query {query_id}: {req.question[:50]}...")
+    logger.info(f"[QUERY] Processing query {query_id}: {req.question[:50]}...")
     
     try:
         question = req.question
@@ -161,7 +161,7 @@ async def ask_question(
         cached_response = response_cache.get(question)
         if cached_response:
             response_time = time.time() - start_time
-            logger.info(f"⚡ Cache hit for query {query_id} ({response_time:.3f}s)")
+            logger.info(f"[CACHE_HIT] Cache hit for query {query_id} ({response_time:.3f}s)")
             return QueryResponse(
                 answer=cached_response,
                 source="cache",
@@ -188,7 +188,7 @@ Answer concisely and accurately:"""
                 # Cache the response
                 response_cache.set(question, answer, "quick_search")
                 
-                logger.info(f"🔄 Quick search success for query {query_id} ({response_time:.3f}s)")
+                logger.info(f"[QUICK_SEARCH] Quick search success for query {query_id} ({response_time:.3f}s)")
                 return QueryResponse(
                     answer=answer,
                     source="quick_search",
@@ -225,7 +225,7 @@ Answer concisely and accurately:"""
                 response_time = time.time() - start_time
                 response_cache.set(question, result, "vector")
                 
-                logger.info(f"📊 Vector search success for query {query_id} ({response_time:.3f}s)")
+                logger.info(f"[VECTOR_SEARCH] Vector search success for query {query_id} ({response_time:.3f}s)")
                 return QueryResponse(
                     answer=result,
                     source="vector",
@@ -258,7 +258,7 @@ Answer accurately and concisely:"""
                         response_time = time.time() - start_time
                         response_cache.set(question, result, "txt_fallback")
                         
-                        logger.info(f"🔄 Fallback search success for query {query_id} ({response_time:.3f}s)")
+                        logger.info(f"[FALLBACK] Fallback search success for query {query_id} ({response_time:.3f}s)")
                         return QueryResponse(
                             answer=result,
                             source="txt_fallback",
@@ -279,7 +279,7 @@ Answer accurately and concisely:"""
                         )
                 else:
                     response_time = time.time() - start_time
-                    logger.warning(f"❌ No relevant context found for query {query_id}")
+                    logger.warning(f"[NOT_FOUND] No relevant context found for query {query_id}")
                     return QueryResponse(
                         answer="No relevant information found for your question.",
                         source="not_found",
@@ -289,7 +289,7 @@ Answer accurately and concisely:"""
                     )
             else:
                 response_time = time.time() - start_time
-                logger.error(f"❌ No data available for query {query_id}")
+                logger.error(f"[NO_DATA] No data available for query {query_id}")
                 return QueryResponse(
                     answer="No data available to answer your question.",
                     source="no_data",
@@ -303,7 +303,7 @@ Answer accurately and concisely:"""
         raise HTTPException(status_code=400, detail=f"Invalid input: {e}")
     except Exception as e:
         response_time = time.time() - start_time
-        logger.error(f"❌ Unexpected error for query {query_id} after {response_time:.3f}s: {e}", exc_info=True)
+        logger.error(f"[ERROR] Unexpected error for query {query_id} after {response_time:.3f}s: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 # Cache management endpoints
@@ -313,7 +313,7 @@ async def clear_cache(request: Request):
     """Clear response cache"""
     try:
         response_cache.clear_expired()
-        logger.info("🗑️ Cache cleared successfully")
+        logger.info("[CACHE] Cache cleared successfully")
         return {"message": "Cache cleared successfully", "timestamp": time.time()}
     except Exception as e:
         logger.error(f"Cache clear error: {e}")

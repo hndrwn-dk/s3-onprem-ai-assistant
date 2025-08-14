@@ -19,10 +19,20 @@ class BucketIndex:
         """Build search indexes from bucket metadata"""
         txt_file = FLATTENED_TXT_PATH
         if not os.path.exists(txt_file):
-            txt_file = os.path.join(DOCS_PATH, "sample_bucket_metadata_converted.txt")
+            # Try common variations of bucket metadata files
+            common_names = [
+                "sample_bucket_metadata_converted.txt",
+                "bucket_metadata.txt", 
+                "buckets.txt"
+            ]
+            for name in common_names:
+                candidate = os.path.join(DOCS_PATH, name)
+                if os.path.exists(candidate):
+                    txt_file = candidate
+                    break
 
         if not os.path.exists(txt_file):
-            logger.warning(f"Bucket metadata file not found: {txt_file}")
+            logger.warning(f"Bucket metadata file not found. Tried: {FLATTENED_TXT_PATH} and common variations in {DOCS_PATH}")
             return
 
         dept_pattern = re.compile(r'dept(?:artment)?\s*:?\s*"?([\w\-\s]+)"?')
@@ -76,7 +86,20 @@ class BucketIndex:
         query_lower = query.lower()
         results = []
 
-        # Department search
+        # Only process specific bucket metadata queries, not operational queries
+        # Operational keywords that should go to vector search instead
+        operational_keywords = [
+            'purge', 'delete', 'remove', 'configure', 'setup', 'install', 
+            'create', 'how to', 'how do', 'steps', 'procedure', 'process',
+            'enable', 'disable', 'manage', 'administration', 'admin'
+        ]
+        
+        # If query contains operational keywords, skip bucket index search
+        for keyword in operational_keywords:
+            if keyword in query_lower:
+                return ""
+
+        # Department search - only for listing/showing buckets
         dept_match = re.search(r'dept(?:artment)?\s*:?\s*"?([\w\-\s]+)"?', query_lower)
         if dept_match:
             dept = dept_match.group(1)
@@ -84,7 +107,7 @@ class BucketIndex:
             if dept_results:
                 results.extend(dept_results)
 
-        # Label search
+        # Label search - only for listing/showing buckets
         label_match = re.search(r'label\s*:?\s*"?([\w\-:\.]+)"?', query_lower)
         if label_match:
             label = label_match.group(1)
@@ -92,18 +115,23 @@ class BucketIndex:
             if label_results:
                 results.extend(label_results)
 
-        # General keyword search (optional)
+        # General keyword search (optional) - only for metadata queries
         if not results and QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK:
-            keywords = re.findall(r'\b([\w\-:\.]+)\b', query_lower)
-            for keyword in keywords:
-                if len(keyword) > 2:  # Skip short words
-                    for line_num, line in self.all_lines:
-                        if keyword in line.lower():
-                            results.append((line_num, line))
-                            if len(results) >= QUICK_SEARCH_MAX_RESULTS:
-                                break
-                    if results:
-                        break
+            # Only trigger keyword fallback for listing/showing queries
+            listing_keywords = ['show', 'list', 'find', 'search', 'get', 'display']
+            is_listing_query = any(keyword in query_lower for keyword in listing_keywords)
+            
+            if is_listing_query:
+                keywords = re.findall(r'\b([\w\-:\.]+)\b', query_lower)
+                for keyword in keywords:
+                    if len(keyword) > 2:  # Skip short words
+                        for line_num, line in self.all_lines:
+                            if keyword in line.lower():
+                                results.append((line_num, line))
+                                if len(results) >= QUICK_SEARCH_MAX_RESULTS:
+                                    break
+                        if results:
+                            break
 
         if results:
             # Remove duplicates and format

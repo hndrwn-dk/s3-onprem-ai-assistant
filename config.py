@@ -10,7 +10,8 @@ RECENT_QUESTIONS_FILE = "recent_questions.txt"
 CACHE_DIR = "cache"
 
 # Updated to check both locations for the bucket metadata file
-FLATTENED_TXT_PATH = os.path.join(DOCS_PATH, "sample_bucket_metadata_converted.txt")
+BUCKET_METADATA_FILENAME = os.getenv("BUCKET_METADATA_FILENAME", "bucket_metadata.txt")
+FLATTENED_TXT_PATH = os.path.join(DOCS_PATH, BUCKET_METADATA_FILENAME)
 
 # Embedding model
 EMBED_MODEL = os.getenv("EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")

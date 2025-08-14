@@ -101,18 +101,25 @@ def load_txt_documents(file_path: str = FLATTENED_TXT_PATH) -> str:
         except Exception as e:
             logger.error(f"Failed to load TXT file {file_path}: {e}")
     
-    # If not found, try looking in docs/ folder
-    docs_txt_path = os.path.join(DOCS_PATH, "sample_bucket_metadata_converted.txt")
-    if os.path.exists(docs_txt_path):
-        try:
-            with open(docs_txt_path, "r", encoding="utf-8") as f:
-                content = f.read()
-                logger.info(f"Loaded {len(content)} characters from {docs_txt_path}")
-                return content
-        except Exception as e:
-            logger.error(f"Failed to load TXT file {docs_txt_path}: {e}")
+    # If not found, try looking for common bucket metadata file names in docs/ folder
+    common_names = [
+        "sample_bucket_metadata_converted.txt",
+        "bucket_metadata.txt",
+        "buckets.txt"
+    ]
     
-    logger.warning(f"Flattened TXT file not found in either {file_path} or {docs_txt_path}")
+    for name in common_names:
+        docs_txt_path = os.path.join(DOCS_PATH, name)
+        if os.path.exists(docs_txt_path):
+            try:
+                with open(docs_txt_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    logger.info(f"Loaded {len(content)} characters from {docs_txt_path}")
+                    return content
+            except Exception as e:
+                logger.error(f"Failed to load TXT file {docs_txt_path}: {e}")
+    
+    logger.warning(f"Flattened TXT file not found. Tried: {file_path} and common variations in {DOCS_PATH}")
     return ""
 
 def quick_relevance_check(query: str, text: str, threshold: int = 1) -> bool:

@@ -13,16 +13,19 @@ class BucketIndex:
         self.label_index = defaultdict(list)
         self.name_index = defaultdict(list)
         self.all_lines = []
+        self.enabled = bool(FLATTENED_TXT_PATH)
         self.build_index()
 
     def build_index(self):
         """Build search indexes from bucket metadata"""
+        if not self.enabled:
+            logger.info("Bucket index disabled (FLATTENED_TXT_PATH not set)")
+            return
+
         txt_file = FLATTENED_TXT_PATH
         if not os.path.exists(txt_file):
-            txt_file = os.path.join(DOCS_PATH, "sample_bucket_metadata_converted.txt")
-
-        if not os.path.exists(txt_file):
             logger.warning(f"Bucket metadata file not found: {txt_file}")
+            self.enabled = False
             return
 
         dept_pattern = re.compile(r'dept(?:artment)?\s*:?\s*"?([\w\-\s]+)"?')
@@ -58,6 +61,7 @@ class BucketIndex:
             )
         except Exception as e:
             logger.error(f"Failed to build bucket index: {e}")
+            self.enabled = False
 
     def search_by_dept(self, dept: str) -> list:
         """Search buckets by department"""
@@ -71,9 +75,24 @@ class BucketIndex:
         """Search buckets by name"""
         return self.name_index.get(name.lower(), [])
 
+    def _is_bucket_query(self, query_lower: str) -> bool:
+        """Heuristic: only treat as bucket query if explicit bucket metadata hints exist (requires colon)."""
+        return (
+            re.search(r'\bdept(?:artment)?\s*:', query_lower) is not None
+            or re.search(r'\blabel\s*:', query_lower) is not None
+            or re.search(r'\bbucket(?:\s*name)?\s*:', query_lower) is not None
+        )
+
     def quick_search(self, query: str) -> str:
-        """Fast search for common bucket queries"""
+        """Fast search for common bucket queries. Only triggers for explicit bucket metadata patterns."""
+        if not self.enabled:
+            return ""
+
         query_lower = query.lower()
+        if not self._is_bucket_query(query_lower):
+            # Do not engage quick search for general questions
+            return ""
+
         results = []
 
         # Department search
@@ -92,7 +111,7 @@ class BucketIndex:
             if label_results:
                 results.extend(label_results)
 
-        # General keyword search (optional)
+        # Keyword fallback only if explicitly enabled and we already determined it's a bucket query
         if not results and QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK:
             keywords = re.findall(r'\b([\w\-:\.]+)\b', query_lower)
             for keyword in keywords:

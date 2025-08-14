@@ -7,7 +7,7 @@ from model_cache import ModelCache
 from response_cache import response_cache
 from bucket_index import bucket_index
 from langchain.chains import RetrievalQA
-from config import VECTOR_SEARCH_K
+from config import VECTOR_SEARCH_K, LLM_TIMEOUT_SECONDS
 from utils import logger, timing_decorator
 
 @timing_decorator
@@ -40,13 +40,13 @@ def main():
         
         # Use LLM to format the answer
         try:
-            llm = ModelCache.get_llm()
-            prompt = f"Based on this bucket information:\n{quick_result}\n\nQuestion: {query}\nAnswer:"
-            # Guard with timeout
             import concurrent.futures
-            from config import LLM_TIMEOUT_SECONDS
+            def format_with_llm():
+                llm = ModelCache.get_llm()
+                prompt = f"Based on this bucket information:\n{quick_result}\n\nQuestion: {query}\nAnswer:"
+                return llm(prompt)
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                fut = ex.submit(llm, prompt)
+                fut = ex.submit(format_with_llm)
                 answer = fut.result(timeout=LLM_TIMEOUT_SECONDS)
             print(f"\n[AI Response] Total time: {time.time() - start_time:.2f} seconds")
             print("Answer:", answer)
@@ -70,42 +70,62 @@ def main():
     # Vector search
     print("[Vector search...]")
     try:
-        vector_store = ModelCache.get_vector_store()
+        import concurrent.futures
+        # Load vector store with timeout
+        print("[Vector store: loading...]")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+            fut_vs = ex.submit(ModelCache.get_vector_store)
+            vector_store = fut_vs.result(timeout=LLM_TIMEOUT_SECONDS)
         if vector_store is None:
             raise RuntimeError("Vector store not available")
+        
+        # Build retriever
         retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
-        llm = ModelCache.get_llm()
-        qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
         
-        # Guard with timeout
-        import concurrent.futures
-        from config import LLM_TIMEOUT_SECONDS
+        # Retrieve docs with timeout
+        print("[Retrieval: fetching relevant documents...]")
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-            fut = ex.submit(qa_chain.run, query)
-            result = fut.result(timeout=LLM_TIMEOUT_SECONDS)
+            fut_docs = ex.submit(retriever.get_relevant_documents, query)
+            docs = fut_docs.result(timeout=LLM_TIMEOUT_SECONDS)
         
-        if result and result.strip():
-            print(f"[Vector Search Hit] Total time: {time.time() - start_time:.2f} seconds")
-            print("Answer:", result)
-            response_cache.set(query, result, "vector")
-        else:
-            print("[Vector search returned empty result]")
-    except concurrent.futures.TimeoutError:
-        # Graceful fallback: show top-k doc snippets
+        if not docs:
+            print("[No relevant documents found]")
+            return
+        
+        # Summarize with LLM under timeout, else show snippets
         try:
-            retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
-            docs = retriever.get_relevant_documents(query)
-            snippets = []
-            for i, doc in enumerate(docs, 1):
-                src = doc.metadata.get("source", "unknown")
-                text = doc.page_content[:500].replace('\n', ' ')
-                snippets.append(f"[{i}] {src}: {text}")
-            fallback = "\n\n".join(snippets) if snippets else "No relevant documents found."
-            print("[LLM Timeout] Showing relevant document snippets:")
-            print(fallback)
+            def summarize_with_llm():
+                llm = ModelCache.get_llm()
+                context = "\n\n".join([d.page_content[:1200] for d in docs])
+                prompt = (
+                    "You are a helpful assistant. Use ONLY the provided context to answer the user's question. "
+                    "If the answer is not present, say you don't have enough information.\n\n"
+                    f"Question: {query}\n\nContext:\n{context}\n\nAnswer:"
+                )
+                return llm(prompt)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                fut_ans = ex.submit(summarize_with_llm)
+                result = fut_ans.result(timeout=LLM_TIMEOUT_SECONDS)
+            if result and result.strip():
+                print(f"[Vector Search Hit] Total time: {time.time() - start_time:.2f} seconds")
+                print("Answer:", result)
+                response_cache.set(query, result, "vector")
+                return
+        except concurrent.futures.TimeoutError:
+            pass  # fall through to snippets
         except Exception as e:
-            print(f"[LLM Timeout] Also failed to fetch snippets: {e}")
-            print("Please try rebuilding embeddings or reducing query complexity.")
+            print(f"[LLM Error during summarization] {e}")
+        
+        # Fallback: show snippets
+        print("[LLM Timeout] Showing relevant document snippets:")
+        snippets = []
+        for i, doc in enumerate(docs, 1):
+            src = doc.metadata.get("source", "unknown")
+            text = doc.page_content[:500].replace('\n', ' ')
+            snippets.append(f"[{i}] {src}: {text}")
+        print("\n\n".join(snippets))
+    except concurrent.futures.TimeoutError:
+        print("[Timeout] Operation exceeded the configured timeout. Check vector store size/availability and LLM readiness.")
     except Exception as e:
         print(f"[Vector Search Failed] {e}")
         print("Try rebuilding embeddings: python build_embeddings_all.py")

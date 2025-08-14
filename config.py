@@ -9,8 +9,8 @@ CHUNKS_PATH = "s3_all_chunks.pkl"
 RECENT_QUESTIONS_FILE = "recent_questions.txt"
 CACHE_DIR = "cache"
 
-# Updated to check both locations for the bucket metadata file
-FLATTENED_TXT_PATH = os.path.join(DOCS_PATH, "sample_bucket_metadata_converted.txt")
+# Optional flattened bucket metadata file path (set via env to enable)
+FLATTENED_TXT_PATH = os.getenv("FLATTENED_TXT_PATH", "")
 
 # Embedding model
 EMBED_MODEL = os.getenv("EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
@@ -26,7 +26,7 @@ LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "20"))
 
 # Quick search settings
 QUICK_SEARCH_MAX_RESULTS = int(os.getenv("QUICK_SEARCH_MAX_RESULTS", "10"))
-QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK = os.getenv("QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK", "true").lower() in ("1", "true", "yes")
+QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK = os.getenv("QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK", "false").lower() in ("1", "true", "yes")
 
 # LLM model configuration
 MODEL = os.getenv("MODEL", "phi3:mini")

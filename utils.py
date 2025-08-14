@@ -91,7 +91,7 @@ def load_documents_from_path(path: str = DOCS_PATH) -> list[Document]:
 
 def load_txt_documents(file_path: str = FLATTENED_TXT_PATH) -> str:
     """Load content from the flattened TXT file"""
-    # First try the configured path
+    # Only use the configured path; do not fallback to specific sample files
     if os.path.exists(file_path):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -101,18 +101,7 @@ def load_txt_documents(file_path: str = FLATTENED_TXT_PATH) -> str:
         except Exception as e:
             logger.error(f"Failed to load TXT file {file_path}: {e}")
     
-    # If not found, try looking in docs/ folder
-    docs_txt_path = os.path.join(DOCS_PATH, "sample_bucket_metadata_converted.txt")
-    if os.path.exists(docs_txt_path):
-        try:
-            with open(docs_txt_path, "r", encoding="utf-8") as f:
-                content = f.read()
-                logger.info(f"Loaded {len(content)} characters from {docs_txt_path}")
-                return content
-        except Exception as e:
-            logger.error(f"Failed to load TXT file {docs_txt_path}: {e}")
-    
-    logger.warning(f"Flattened TXT file not found in either {file_path} or {docs_txt_path}")
+    logger.warning(f"Flattened TXT file not found at {file_path}")
     return ""
 
 def quick_relevance_check(query: str, text: str, threshold: int = 1) -> bool:

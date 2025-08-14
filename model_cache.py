@@ -51,7 +51,13 @@ class ModelCache:
             with cls._lock:
                 if cls._embeddings is None:
                     start_time = time.time()
-                    cls._embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
+                    # Prefer same device settings used during build for consistency
+                    from config import EMBED_DEVICE, EMBED_BATCH_SIZE
+                    cls._embeddings = HuggingFaceEmbeddings(
+                        model_name=EMBED_MODEL,
+                        model_kwargs={"device": EMBED_DEVICE},
+                        encode_kwargs={"batch_size": EMBED_BATCH_SIZE},
+                    )
                     cls._load_times['embeddings'] = time.time() - start_time
                     logger.info(f"Embeddings loaded in {cls._load_times['embeddings']:.2f} seconds")
         return cls._embeddings

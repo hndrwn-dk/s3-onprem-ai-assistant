@@ -4,18 +4,24 @@
 
 ## Quick Start
 
-### 1. CLI Interface
+### 1. Desktop App (Easiest) 🖥️
+```bash
+python desktop_app.py
+```
+*User-friendly GUI with all features built-in*
+
+### 2. CLI Interface
 ```bash
 python s3ai_query.py "how to purge bucket in Cloudian Hyperstore"
 ```
 
-### 2. Web Interface  
+### 3. Web Interface  
 ```bash
 python -m streamlit run streamlit_ui.py
 # Open: http://localhost:8501
 ```
 
-### 3. REST API
+### 4. REST API
 ```bash
 python -m uvicorn api:app --reload
 # Test: curl -X POST "http://localhost:8000/ask" -H "Content-Type: application/json" -d '{"question": "your question"}'
@@ -56,6 +62,7 @@ python -m uvicorn api:app --reload
 
 ```
 📁 S3 AI Assistant/
+├── 🖥️ desktop_app.py         # Desktop GUI (Recommended)
 ├── 🚀 s3ai_query.py          # CLI interface
 ├── 🌐 streamlit_ui.py        # Web interface  
 ├── 🔗 api.py                 # REST API
@@ -66,6 +73,7 @@ python -m uvicorn api:app --reload
 ├── 🛠️ utils.py               # Utilities
 ├── 🏗️ build_embeddings_all.py # Vector index builder
 ├── ✅ validation.py          # System validation
+├── 📦 build_package.py       # Desktop packaging tool
 ├── 📄 requirements.txt       # Dependencies
 ├── 📁 docs/                  # Your PDF documents
 ├── 📁 s3_all_docs/           # Vector index files

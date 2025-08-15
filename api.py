@@ -53,7 +53,13 @@ async def startup_event():
     preload_vector = os.getenv("PRELOAD_VECTOR", "0").lower() in ("1", "true", "yes")
     if preload_vector:
         try:
-            ModelCache.get_vector_store()
+            # Load vector store directly to avoid threading issues
+            from langchain_community.embeddings import HuggingFaceEmbeddings
+            from langchain_community.vectorstores import FAISS
+            from config import VECTOR_INDEX_PATH, EMBED_MODEL
+            embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": "cpu"})
+            FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
+            logger.info("Vector store preloaded successfully")
         except Exception as e:
             logger.warning(f"Vector store preload failed: {e}")
     else:
@@ -126,7 +132,12 @@ Answer:"""
 
         # Vector search fallback
         try:
-            vector_store = ModelCache.get_vector_store()
+            # Load vector store directly to avoid threading issues
+            from langchain_community.embeddings import HuggingFaceEmbeddings
+            from langchain_community.vectorstores import FAISS
+            from config import VECTOR_INDEX_PATH, EMBED_MODEL
+            embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": "cpu"})
+            vector_store = FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
             if vector_store is None:
                 raise RuntimeError("Vector store not available - please run 'python build_embeddings_all.py' after uploading documents")
             retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})

@@ -63,6 +63,14 @@ class ModelCache:
                 if cls._vector_store is None:
                     start_time = time.time()
                     try:
+                        # Import here to avoid circular imports
+                        from utils import check_vector_index_exists, ensure_documents_for_embedding
+                        
+                        # First check if vector index exists
+                        if not check_vector_index_exists():
+                            logger.error(f"Vector index not found at {VECTOR_INDEX_PATH}. Please run: python build_embeddings_all.py")
+                            raise FileNotFoundError(f"Vector index missing: {VECTOR_INDEX_PATH}")
+                        
                         embeddings = cls.get_embeddings()
                         cls._vector_store = FAISS.load_local(
                             VECTOR_INDEX_PATH,
@@ -71,12 +79,19 @@ class ModelCache:
                         )
                         cls._load_times['vector_store'] = time.time() - start_time
                         logger.info(
-                            f"Vector store loaded in {cls._load_times['vector_store']:.2f} seconds"
+                            f"Vector store loaded successfully in {cls._load_times['vector_store']:.2f} seconds"
                         )
                     except Exception as e:
                         cls._vector_store = None
                         cls._load_times['vector_store_error'] = str(e)
-                        logger.warning(f"Vector store not available: {e}")
+                        logger.error(f"Vector store loading failed: {e}")
+                        
+                        # Provide helpful diagnostics
+                        from utils import ensure_documents_for_embedding
+                        if ensure_documents_for_embedding():
+                            logger.info("Documents are available - run 'python build_embeddings_all.py' to build vector index")
+                        else:
+                            logger.warning("No documents found for vector search - system will fall back to text search")
         return cls._vector_store
 
     @classmethod

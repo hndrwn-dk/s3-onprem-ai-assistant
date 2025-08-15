@@ -115,6 +115,27 @@ def load_txt_documents(file_path: str = FLATTENED_TXT_PATH) -> str:
     logger.warning(f"Flattened TXT file not found in either {file_path} or {docs_txt_path}")
     return ""
 
+def check_vector_index_exists() -> bool:
+    """Check if vector index exists and is valid"""
+    from config import VECTOR_INDEX_PATH
+    index_file = os.path.join(VECTOR_INDEX_PATH, "index.faiss")
+    pkl_file = os.path.join(VECTOR_INDEX_PATH, "index.pkl")
+    return os.path.exists(index_file) and os.path.exists(pkl_file)
+
+def ensure_documents_for_embedding() -> bool:
+    """Ensure there are documents available for embedding beyond just the sample file"""
+    docs = load_documents_from_path()
+    
+    # Filter out the sample file to see if we have real documents
+    real_docs = [doc for doc in docs if not doc.metadata.get("source", "").endswith("sample_bucket_metadata_converted.txt")]
+    
+    if len(real_docs) == 0:
+        logger.warning("No real documents found for embedding - only sample file exists")
+        return False
+    
+    logger.info(f"Found {len(real_docs)} real documents for embedding")
+    return True
+
 def quick_relevance_check(query: str, text: str, threshold: int = 1) -> bool:
     """Quick check if text is relevant before expensive processing"""
     query_words = query.lower().split()

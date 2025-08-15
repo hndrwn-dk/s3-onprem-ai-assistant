@@ -102,29 +102,64 @@ def main():
             print("[No relevant documents found]")
             return
         
-        # Skip LLM processing for now - show snippets directly
+        # Process with LLM - hybrid approach with fallbacks
         print(f"[Vector Search Success] Found {len(docs)} relevant documents in {time.time() - start_time:.2f} seconds")
-        print("[Note: Showing document snippets directly - LLM processing disabled due to hanging issue]")
+        print("[AI Processing] Attempting to generate clean summary...")
         
-        # Show snippets with smart formatting
-        from text_formatter import format_document_snippet, extract_key_info
-        
-        print("\n" + "=" * 80)
-        print("🔍 SEARCH RESULTS - RELEVANT DOCUMENTS")
-        print("=" * 80)
-        
-        for i, doc in enumerate(docs, 1):
-            formatted_snippet = format_document_snippet(doc, i)
-            print(formatted_snippet)
+        try:
+            # Method 1: Try direct LLM call with shorter context
+            context = "\n\n".join([d.page_content[:600] for d in docs])  # Shorter context
+            prompt = f"""You are a technical documentation assistant. The user asked: "{query}"
+
+Based on this information from technical documents, provide a clear, step-by-step answer:
+
+{context}
+
+Please provide:
+1. A direct answer to the question
+2. Step-by-step instructions if applicable  
+3. Any important configuration details
+4. Relevant commands or API calls
+
+Answer:"""
             
-            # Also show key extracted info for the query
-            key_info = extract_key_info(doc.page_content, query)
-            if key_info and key_info != doc.page_content[:400]:
-                print(f"🎯 Key Information:")
-                print(f"{key_info}")
-                print()
-        
-        print("=" * 80)
+            # Try with a simple direct call first
+            print("[Trying lightweight LLM processing...]")
+            from model_cache import ModelCache
+            llm = ModelCache.get_llm()
+            
+            # Simple, direct call - no threading
+            result = llm.invoke(prompt)  # Use invoke instead of deprecated __call__
+            
+            if result and result.strip():
+                print(f"[Success] AI-processed answer ready in {time.time() - start_time:.2f} seconds")
+                print("\n" + "=" * 80)
+                print("🤖 AI-PROCESSED ANSWER")
+                print("=" * 80)
+                print(result)
+                print("=" * 80)
+                response_cache.set(query, result, "vector_llm")
+                return
+            else:
+                raise ValueError("Empty LLM response")
+                
+        except Exception as e:
+            print(f"[LLM Failed] {e}")
+            print("[Fallback] Showing enhanced document snippets...")
+            
+            # Fallback: Show smart-formatted snippets
+            from text_formatter import format_document_snippet
+            
+            print("\n" + "=" * 80)
+            print("📋 DOCUMENT SNIPPETS (LLM processing failed)")
+            print("=" * 80)
+            
+            for i, doc in enumerate(docs, 1):
+                formatted_snippet = format_document_snippet(doc, i)
+                print(formatted_snippet)
+            
+            print("💡 TIP: The above contains the answer, but may need manual interpretation due to PDF extraction issues.")
+            print("=" * 80)
     except concurrent.futures.TimeoutError as e:
         # Determine which operation timed out based on context
         current_time = time.time()

@@ -25,7 +25,7 @@ def create_spec_file():
 block_cipher = None
 
 a = Analysis(
-    ['desktop_app.py'],
+    ['modern_desktop_app.py'],
     pathex=[],
     binaries=[],
     datas=[

@@ -182,27 +182,33 @@ Answer:"""
                     embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": "cpu"})
                     vector_store = FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
                     retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
-                    llm = ModelCache.get_llm()
-                    qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
                     progress_bar.progress(80)
-                    status_text.text("AI processing...")
-                    import concurrent.futures
-                    from config import LLM_TIMEOUT_SECONDS
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                        fut = ex.submit(qa_chain.run, query)
-                        response = fut.result(timeout=LLM_TIMEOUT_SECONDS)
-                    if response and response.strip():
+                    status_text.text("Retrieving documents...")
+                    docs = retriever.get_relevant_documents(query)
+                    
+                    if docs:
                         progress_bar.progress(100)
                         status_text.empty()
                         rt = time.time() - start_time
-                        st.success(f"Vector Search Result ({rt:.2f}s)")
-                        st.write(response)
-                        response_cache.set(query, response, "vector")
+                        st.success(f"Found {len(docs)} relevant documents ({rt:.2f}s)")
+                        st.info("📋 Document snippets (LLM processing disabled to avoid hangs)")
+                        
+                        for i, doc in enumerate(docs, 1):
+                            src = doc.metadata.get('source', 'unknown')
+                            content = doc.page_content[:600].replace('\n', ' ')
+                            st.write(f"**[{i}] {src}:**")
+                            st.write(content)
+                            st.write("---")
+                        
+                        # Cache the snippets result
+                        snippets_result = "\n\n".join([f"[{i}] {doc.metadata.get('source', 'unknown')}: {doc.page_content[:500]}" for i, doc in enumerate(docs, 1)])
+                        response_cache.set(query, snippets_result, "vector_snippets")
                         with st.expander("Performance Details"):
-                            st.write("Source: Vector search")
+                            st.write("Source: Vector search (snippets)")
                             st.write(f"Response time: {rt:.2f} seconds")
+                            st.write(f"Documents found: {len(docs)}")
                     else:
-                        raise ValueError("Empty response from vector search")
+                        raise ValueError("No relevant documents found")
                 except Exception as e:
                     logger.warning(f"Vector search failed: {e}")
                     # Fallback

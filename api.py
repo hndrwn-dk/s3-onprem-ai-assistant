@@ -141,23 +141,25 @@ Answer:"""
             if vector_store is None:
                 raise RuntimeError("Vector store not available - please run 'python build_embeddings_all.py' after uploading documents")
             retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
-            llm = ModelCache.get_llm()
-            qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
-            import concurrent.futures
-            from config import LLM_TIMEOUT_SECONDS
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                fut = ex.submit(qa_chain.run, question)
-                result = fut.result(timeout=LLM_TIMEOUT_SECONDS)
-
-            if result and result.strip():
-                response_cache.set(question, result, "vector")
+            docs = retriever.get_relevant_documents(question)
+            
+            if docs:
+                # Format document snippets
+                snippets = []
+                for i, doc in enumerate(docs, 1):
+                    src = doc.metadata.get("source", "unknown")
+                    content = doc.page_content[:500].replace('\n', ' ')
+                    snippets.append(f"[{i}] {src}: {content}")
+                
+                result = "\n\n".join(snippets)
+                response_cache.set(question, result, "vector_snippets")
                 return QueryResponse(
-                    answer=result,
-                    source="vector",
+                    answer=f"Found {len(docs)} relevant documents:\n\n{result}",
+                    source="vector_snippets",
                     response_time=time.time() - start_time,
                 )
             else:
-                raise ValueError("Empty result from vector search")
+                raise ValueError("No relevant documents found")
 
         except Exception as e:
             logger.warning(f"Vector search failed: {e}")

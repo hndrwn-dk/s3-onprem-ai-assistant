@@ -102,29 +102,9 @@ def main():
             print("[No relevant documents found]")
             return
         
-        # Summarize with LLM under timeout, else show snippets
-        try:
-            def summarize_with_llm():
-                llm = ModelCache.get_llm()
-                context = "\n\n".join([d.page_content[:1200] for d in docs])
-                prompt = (
-                    "You are a helpful assistant. Use ONLY the provided context to answer the user's question. "
-                    "If the answer is not present, say you don't have enough information.\n\n"
-                    f"Question: {query}\n\nContext:\n{context}\n\nAnswer:"
-                )
-                return llm(prompt)
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                fut_ans = ex.submit(summarize_with_llm)
-                result = fut_ans.result(timeout=LLM_TIMEOUT_SECONDS)
-            if result and result.strip():
-                print(f"[Vector Search Hit] Total time: {time.time() - start_time:.2f} seconds")
-                print("Answer:", result)
-                response_cache.set(query, result, "vector")
-                return
-        except concurrent.futures.TimeoutError:
-            pass  # fall through to snippets
-        except Exception as e:
-            print(f"[LLM Error during summarization] {e}")
+        # Show snippets directly (LLM processing disabled to avoid hangs)
+        print(f"[Vector Search Hit] Found {len(docs)} relevant documents in {time.time() - start_time:.2f} seconds")
+        print("[Note: LLM processing disabled to avoid timeouts - showing document snippets]")
         
         # Fallback: show snippets
         print("[LLM Timeout] Showing relevant document snippets:")

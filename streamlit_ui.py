@@ -182,40 +182,88 @@ Answer:"""
                     embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": "cpu"})
                     vector_store = FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
                     retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
-                    progress_bar.progress(80)
+                    progress_bar.progress(60)
                     status_text.text("Retrieving documents...")
                     docs = retriever.get_relevant_documents(query)
                     
                     if docs:
-                        progress_bar.progress(100)
-                        status_text.empty()
-                        rt = time.time() - start_time
-                        st.success(f"Found {len(docs)} relevant documents ({rt:.2f}s)")
-                        st.info("📋 Document snippets (LLM processing disabled to avoid hangs)")
+                        progress_bar.progress(80)
+                        status_text.text("AI processing...")
                         
-                        for i, doc in enumerate(docs, 1):
-                            src = doc.metadata.get('source', 'unknown')
-                            # Clean up the text for better readability
-                            content = doc.page_content[:800]
-                            content = content.replace('\n', ' ')  # Remove line breaks
-                            content = ' '.join(content.split())   # Normalize whitespace
-                            # Add proper spacing around common patterns
-                            content = content.replace('.', '. ').replace('  ', ' ')
-                            content = content.replace('API', ' API').replace('  ', ' ')
-                            content = content.replace('POST', ' POST').replace('  ', ' ')
+                        # Try LLM processing with fallback
+                        try:
+                            # Method 1: Try direct LLM call with shorter context
+                            context = "\n\n".join([d.page_content[:600] for d in docs])
+                            prompt = f"""You are a technical documentation assistant. The user asked: "{query}"
+
+Based on this information from technical documents, provide a clear, step-by-step answer:
+
+{context}
+
+Please provide:
+1. A direct answer to the question
+2. Step-by-step instructions if applicable  
+3. Any important configuration details
+4. Relevant commands or API calls
+
+Answer:"""
                             
-                            st.write(f"📄 **Document {i}: {src}**")
-                            with st.expander(f"Read content from {src.split('/')[-1]}", expanded=True):
-                                st.write(content + "...")
-                            st.write("---")
-                        
-                        # Cache the snippets result
-                        snippets_result = "\n\n".join([f"[{i}] {doc.metadata.get('source', 'unknown')}: {doc.page_content[:500]}" for i, doc in enumerate(docs, 1)])
-                        response_cache.set(query, snippets_result, "vector_snippets")
-                        with st.expander("Performance Details"):
-                            st.write("Source: Vector search (snippets)")
-                            st.write(f"Response time: {rt:.2f} seconds")
-                            st.write(f"Documents found: {len(docs)}")
+                            llm = ModelCache.get_llm()
+                            result = llm.invoke(prompt)
+                            
+                            if result and result.strip():
+                                progress_bar.progress(100)
+                                status_text.empty()
+                                rt = time.time() - start_time
+                                st.success(f"🤖 AI-processed answer ready ({rt:.2f}s)")
+                                
+                                # Show the clean AI answer
+                                st.markdown("### 🤖 AI-Processed Answer")
+                                st.write(result)
+                                
+                                # Cache the result
+                                response_cache.set(query, result, "vector_llm")
+                                save_recent_question(query)
+                                
+                                with st.expander("📊 Performance Details"):
+                                    st.write("Source: Vector search + LLM processing")
+                                    st.write(f"Response time: {rt:.2f} seconds")
+                                    st.write(f"Documents found: {len(docs)}")
+                                    st.write("LLM processing: ✅ Success")
+                            else:
+                                raise ValueError("Empty LLM response")
+                                
+                        except Exception as e:
+                            # Fallback: Show formatted snippets
+                            progress_bar.progress(100)
+                            status_text.empty()
+                            rt = time.time() - start_time
+                            st.warning(f"LLM processing failed: {e}")
+                            st.info("📋 Showing document snippets (LLM fallback)")
+                            
+                            from text_formatter import format_document_snippet
+                            
+                            for i, doc in enumerate(docs, 1):
+                                src = doc.metadata.get('source', 'unknown')
+                                filename = src.split('\\')[-1].split('/')[-1]
+                                
+                                st.write(f"📄 **Document {i}: {filename}**")
+                                with st.expander(f"Read content from {filename}", expanded=True):
+                                    from text_formatter import smart_format_text
+                                    content = smart_format_text(doc.page_content, max_length=600)
+                                    st.write(content + "...")
+                                st.write("---")
+                            
+                            # Cache the snippets result
+                            snippets_result = "\n\n".join([f"[{i}] {doc.metadata.get('source', 'unknown')}: {doc.page_content[:500]}" for i, doc in enumerate(docs, 1)])
+                            response_cache.set(query, snippets_result, "vector_snippets_fallback")
+                            save_recent_question(query)
+                            
+                            with st.expander("📊 Performance Details"):
+                                st.write("Source: Vector search (LLM fallback)")
+                                st.write(f"Response time: {rt:.2f} seconds")
+                                st.write(f"Documents found: {len(docs)}")
+                                st.write("LLM processing: ❌ Failed, showing snippets")
                     else:
                         raise ValueError("No relevant documents found")
                 except Exception as e:

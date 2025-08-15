@@ -7,7 +7,7 @@ from model_cache import ModelCache
 from response_cache import response_cache
 from bucket_index import bucket_index
 from langchain.chains import RetrievalQA
-from config import VECTOR_SEARCH_K, LLM_TIMEOUT_SECONDS
+from config import VECTOR_SEARCH_K, LLM_TIMEOUT_SECONDS, VECTOR_LOAD_TIMEOUT_SECONDS
 from utils import logger, timing_decorator
 
 @timing_decorator
@@ -71,11 +71,21 @@ def main():
     print("[Vector search...]")
     try:
         import concurrent.futures
-        # Load vector store with timeout
+        # Load vector store (bypass ModelCache to avoid threading issues)
         print("[Vector store: loading...]")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-            fut_vs = ex.submit(ModelCache.get_vector_store)
-            vector_store = fut_vs.result(timeout=LLM_TIMEOUT_SECONDS)
+        vector_load_start = time.time()
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        from langchain_community.vectorstores import FAISS
+        from config import VECTOR_INDEX_PATH, EMBED_MODEL
+        
+        print("[Loading embeddings directly...]")
+        embeddings = HuggingFaceEmbeddings(
+            model_name=EMBED_MODEL,
+            model_kwargs={"device": "cpu"}
+        )
+        print("[Loading FAISS index...]")
+        vector_store = FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
+        print(f"[Vector store: loaded in {time.time() - vector_load_start:.2f}s]")
         if vector_store is None:
             raise RuntimeError("Vector store not available")
         
@@ -92,40 +102,76 @@ def main():
             print("[No relevant documents found]")
             return
         
-        # Summarize with LLM under timeout, else show snippets
-        try:
-            def summarize_with_llm():
-                llm = ModelCache.get_llm()
-                context = "\n\n".join([d.page_content[:1200] for d in docs])
-                prompt = (
-                    "You are a helpful assistant. Use ONLY the provided context to answer the user's question. "
-                    "If the answer is not present, say you don't have enough information.\n\n"
-                    f"Question: {query}\n\nContext:\n{context}\n\nAnswer:"
-                )
-                return llm(prompt)
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                fut_ans = ex.submit(summarize_with_llm)
-                result = fut_ans.result(timeout=LLM_TIMEOUT_SECONDS)
-            if result and result.strip():
-                print(f"[Vector Search Hit] Total time: {time.time() - start_time:.2f} seconds")
-                print("Answer:", result)
-                response_cache.set(query, result, "vector")
-                return
-        except concurrent.futures.TimeoutError:
-            pass  # fall through to snippets
-        except Exception as e:
-            print(f"[LLM Error during summarization] {e}")
+        # Process with LLM - hybrid approach with fallbacks
+        print(f"[Vector Search Success] Found {len(docs)} relevant documents in {time.time() - start_time:.2f} seconds")
+        print("[AI Processing] Attempting to generate clean summary...")
         
-        # Fallback: show snippets
-        print("[LLM Timeout] Showing relevant document snippets:")
-        snippets = []
-        for i, doc in enumerate(docs, 1):
-            src = doc.metadata.get("source", "unknown")
-            text = doc.page_content[:500].replace('\n', ' ')
-            snippets.append(f"[{i}] {src}: {text}")
-        print("\n\n".join(snippets))
-    except concurrent.futures.TimeoutError:
-        print("[Timeout] Operation exceeded the configured timeout. Check vector store size/availability and LLM readiness.")
+        try:
+            # Method 1: Try direct LLM call with shorter context
+            context = "\n\n".join([d.page_content[:600] for d in docs])  # Shorter context
+            prompt = f"""You are a technical documentation assistant. The user asked: "{query}"
+
+Based on this information from technical documents, provide a clear, step-by-step answer:
+
+{context}
+
+Please provide:
+1. A direct answer to the question
+2. Step-by-step instructions if applicable  
+3. Any important configuration details
+4. Relevant commands or API calls
+
+Answer:"""
+            
+            # Try with a simple direct call first
+            print("[Trying lightweight LLM processing...]")
+            from model_cache import ModelCache
+            llm = ModelCache.get_llm()
+            
+            # Simple, direct call - no threading
+            result = llm.invoke(prompt)  # Use invoke instead of deprecated __call__
+            
+            if result and result.strip():
+                print(f"[Success] AI-processed answer ready in {time.time() - start_time:.2f} seconds")
+                print("\n" + "=" * 80)
+                print("🤖 AI-PROCESSED ANSWER")
+                print("=" * 80)
+                print(result)
+                print("=" * 80)
+                response_cache.set(query, result, "vector_llm")
+                return
+            else:
+                raise ValueError("Empty LLM response")
+                
+        except Exception as e:
+            print(f"[LLM Failed] {e}")
+            print("[Fallback] Showing enhanced document snippets...")
+            
+            # Fallback: Show smart-formatted snippets
+            from text_formatter import format_document_snippet
+            
+            print("\n" + "=" * 80)
+            print("📋 DOCUMENT SNIPPETS (LLM processing failed)")
+            print("=" * 80)
+            
+            for i, doc in enumerate(docs, 1):
+                formatted_snippet = format_document_snippet(doc, i)
+                print(formatted_snippet)
+            
+            print("💡 TIP: The above contains the answer, but may need manual interpretation due to PDF extraction issues.")
+            print("=" * 80)
+    except concurrent.futures.TimeoutError as e:
+        # Determine which operation timed out based on context
+        current_time = time.time()
+        if 'vector_load_start' in locals() and current_time - vector_load_start > VECTOR_LOAD_TIMEOUT_SECONDS - 5:
+            print(f"[Vector Load Timeout] Vector store loading exceeded {VECTOR_LOAD_TIMEOUT_SECONDS}s timeout.")
+            print("This can happen with large indices. Try:")
+            print("1. Set VECTOR_LOAD_TIMEOUT_SECONDS to a higher value (e.g., 300)")
+            print("2. Check available system memory")
+            print("3. Consider rebuilding with smaller chunks: python build_embeddings_all.py")
+        else:
+            print(f"[Operation Timeout] Operation exceeded the configured timeout.")
+            print("Check vector store availability and LLM readiness.")
     except Exception as e:
         print(f"[Vector Search Failed] {e}")
         print("Try rebuilding embeddings: python build_embeddings_all.py")

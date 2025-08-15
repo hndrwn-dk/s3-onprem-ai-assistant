@@ -53,7 +53,13 @@ async def startup_event():
     preload_vector = os.getenv("PRELOAD_VECTOR", "0").lower() in ("1", "true", "yes")
     if preload_vector:
         try:
-            ModelCache.get_vector_store()
+            # Load vector store directly to avoid threading issues
+            from langchain_community.embeddings import HuggingFaceEmbeddings
+            from langchain_community.vectorstores import FAISS
+            from config import VECTOR_INDEX_PATH, EMBED_MODEL
+            embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": "cpu"})
+            FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
+            logger.info("Vector store preloaded successfully")
         except Exception as e:
             logger.warning(f"Vector store preload failed: {e}")
     else:
@@ -126,27 +132,70 @@ Answer:"""
 
         # Vector search fallback
         try:
-            vector_store = ModelCache.get_vector_store()
+            # Load vector store directly to avoid threading issues
+            from langchain_community.embeddings import HuggingFaceEmbeddings
+            from langchain_community.vectorstores import FAISS
+            from config import VECTOR_INDEX_PATH, EMBED_MODEL
+            embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": "cpu"})
+            vector_store = FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
             if vector_store is None:
                 raise RuntimeError("Vector store not available - please run 'python build_embeddings_all.py' after uploading documents")
             retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
-            llm = ModelCache.get_llm()
-            qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
-            import concurrent.futures
-            from config import LLM_TIMEOUT_SECONDS
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                fut = ex.submit(qa_chain.run, question)
-                result = fut.result(timeout=LLM_TIMEOUT_SECONDS)
+            docs = retriever.get_relevant_documents(question)
+            
+            if docs:
+                # Try LLM processing with fallback
+                try:
+                    # Method 1: Try direct LLM call with shorter context
+                    context = "\n\n".join([d.page_content[:600] for d in docs])
+                    prompt = f"""You are a technical documentation assistant. The user asked: "{question}"
 
-            if result and result.strip():
-                response_cache.set(question, result, "vector")
-                return QueryResponse(
-                    answer=result,
-                    source="vector",
-                    response_time=time.time() - start_time,
-                )
+Based on this information from technical documents, provide a clear, step-by-step answer:
+
+{context}
+
+Please provide:
+1. A direct answer to the question
+2. Step-by-step instructions if applicable  
+3. Any important configuration details
+4. Relevant commands or API calls
+
+Answer:"""
+                    
+                    llm = ModelCache.get_llm()
+                    result = llm.invoke(prompt)
+                    
+                    if result and result.strip():
+                        response_cache.set(question, result, "vector_llm")
+                        return QueryResponse(
+                            answer=result,
+                            source="vector_llm",
+                            response_time=time.time() - start_time,
+                        )
+                    else:
+                        raise ValueError("Empty LLM response")
+                        
+                except Exception as e:
+                    logger.warning(f"LLM processing failed: {e}, falling back to snippets")
+                    
+                    # Fallback: Format document snippets for better readability
+                    from text_formatter import smart_format_text
+                    snippets = []
+                    for i, doc in enumerate(docs, 1):
+                        src = doc.metadata.get("source", "unknown")
+                        filename = src.split('\\')[-1].split('/')[-1]
+                        content = smart_format_text(doc.page_content, max_length=600)
+                        snippets.append(f"📄 Document {i}: {filename}\n{'-' * 60}\n{content}...\n")
+                    
+                    result = "\n".join(snippets)
+                    response_cache.set(question, result, "vector_snippets_fallback")
+                    return QueryResponse(
+                        answer=f"Found {len(docs)} relevant documents (LLM processing failed):\n\n{result}",
+                        source="vector_snippets_fallback", 
+                        response_time=time.time() - start_time,
+                    )
             else:
-                raise ValueError("Empty result from vector search")
+                raise ValueError("No relevant documents found")
 
         except Exception as e:
             logger.warning(f"Vector search failed: {e}")

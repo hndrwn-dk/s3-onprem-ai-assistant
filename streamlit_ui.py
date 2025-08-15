@@ -70,7 +70,12 @@ with st.sidebar:
                 from build_embeddings_all import build_vector_index
                 build_vector_index()
                 ModelCache.reset_vector_store()
-                ModelCache.get_vector_store()
+                # Load vector store directly to avoid threading issues
+                from langchain_community.embeddings import HuggingFaceEmbeddings
+                from langchain_community.vectorstores import FAISS
+                from config import VECTOR_INDEX_PATH, EMBED_MODEL
+                embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": "cpu"})
+                FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
                 st.success("Embeddings rebuilt and vector store reloaded")
             except Exception as e:
                 st.error(f"Embedding rebuild failed: {e}")
@@ -170,29 +175,97 @@ Answer:"""
                 progress_bar.progress(50)
                 status_text.text("Vector search...")
                 try:
-                    vector_store = ModelCache.get_vector_store()
+                    # Load vector store directly to avoid threading issues
+                    from langchain_community.embeddings import HuggingFaceEmbeddings
+                    from langchain_community.vectorstores import FAISS
+                    from config import VECTOR_INDEX_PATH, EMBED_MODEL
+                    embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": "cpu"})
+                    vector_store = FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
                     retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
-                    llm = ModelCache.get_llm()
-                    qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
-                    progress_bar.progress(80)
-                    status_text.text("AI processing...")
-                    import concurrent.futures
-                    from config import LLM_TIMEOUT_SECONDS
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                        fut = ex.submit(qa_chain.run, query)
-                        response = fut.result(timeout=LLM_TIMEOUT_SECONDS)
-                    if response and response.strip():
-                        progress_bar.progress(100)
-                        status_text.empty()
-                        rt = time.time() - start_time
-                        st.success(f"Vector Search Result ({rt:.2f}s)")
-                        st.write(response)
-                        response_cache.set(query, response, "vector")
-                        with st.expander("Performance Details"):
-                            st.write("Source: Vector search")
-                            st.write(f"Response time: {rt:.2f} seconds")
+                    progress_bar.progress(60)
+                    status_text.text("Retrieving documents...")
+                    docs = retriever.get_relevant_documents(query)
+                    
+                    if docs:
+                        progress_bar.progress(80)
+                        status_text.text("AI processing...")
+                        
+                        # Try LLM processing with fallback
+                        try:
+                            # Method 1: Try direct LLM call with shorter context
+                            context = "\n\n".join([d.page_content[:600] for d in docs])
+                            prompt = f"""You are a technical documentation assistant. The user asked: "{query}"
+
+Based on this information from technical documents, provide a clear, step-by-step answer:
+
+{context}
+
+Please provide:
+1. A direct answer to the question
+2. Step-by-step instructions if applicable  
+3. Any important configuration details
+4. Relevant commands or API calls
+
+Answer:"""
+                            
+                            llm = ModelCache.get_llm()
+                            result = llm.invoke(prompt)
+                            
+                            if result and result.strip():
+                                progress_bar.progress(100)
+                                status_text.empty()
+                                rt = time.time() - start_time
+                                st.success(f"🤖 AI-processed answer ready ({rt:.2f}s)")
+                                
+                                # Show the clean AI answer
+                                st.markdown("### 🤖 AI-Processed Answer")
+                                st.write(result)
+                                
+                                # Cache the result
+                                response_cache.set(query, result, "vector_llm")
+                                save_recent_question(query)
+                                
+                                with st.expander("📊 Performance Details"):
+                                    st.write("Source: Vector search + LLM processing")
+                                    st.write(f"Response time: {rt:.2f} seconds")
+                                    st.write(f"Documents found: {len(docs)}")
+                                    st.write("LLM processing: ✅ Success")
+                            else:
+                                raise ValueError("Empty LLM response")
+                                
+                        except Exception as e:
+                            # Fallback: Show formatted snippets
+                            progress_bar.progress(100)
+                            status_text.empty()
+                            rt = time.time() - start_time
+                            st.warning(f"LLM processing failed: {e}")
+                            st.info("📋 Showing document snippets (LLM fallback)")
+                            
+                            from text_formatter import format_document_snippet
+                            
+                            for i, doc in enumerate(docs, 1):
+                                src = doc.metadata.get('source', 'unknown')
+                                filename = src.split('\\')[-1].split('/')[-1]
+                                
+                                st.write(f"📄 **Document {i}: {filename}**")
+                                with st.expander(f"Read content from {filename}", expanded=True):
+                                    from text_formatter import smart_format_text
+                                    content = smart_format_text(doc.page_content, max_length=600)
+                                    st.write(content + "...")
+                                st.write("---")
+                            
+                            # Cache the snippets result
+                            snippets_result = "\n\n".join([f"[{i}] {doc.metadata.get('source', 'unknown')}: {doc.page_content[:500]}" for i, doc in enumerate(docs, 1)])
+                            response_cache.set(query, snippets_result, "vector_snippets_fallback")
+                            save_recent_question(query)
+                            
+                            with st.expander("📊 Performance Details"):
+                                st.write("Source: Vector search (LLM fallback)")
+                                st.write(f"Response time: {rt:.2f} seconds")
+                                st.write(f"Documents found: {len(docs)}")
+                                st.write("LLM processing: ❌ Failed, showing snippets")
                     else:
-                        raise ValueError("Empty response from vector search")
+                        raise ValueError("No relevant documents found")
                 except Exception as e:
                     logger.warning(f"Vector search failed: {e}")
                     # Fallback

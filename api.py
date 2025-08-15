@@ -128,7 +128,7 @@ Answer:"""
         try:
             vector_store = ModelCache.get_vector_store()
             if vector_store is None:
-                raise RuntimeError("Vector store not available")
+                raise RuntimeError("Vector store not available - please run 'python build_embeddings_all.py' after uploading documents")
             retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
             llm = ModelCache.get_llm()
             qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)

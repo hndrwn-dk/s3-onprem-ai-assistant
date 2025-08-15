@@ -117,7 +117,7 @@ coll = COLLECT(
 )
 '''
     
-    with open('release.spec', 'w') as f:
+    with open('release.spec', 'w', encoding='utf-8') as f:
         f.write(spec_content)
     print("✅ Created release spec file")
 
@@ -181,7 +181,7 @@ S3AIAssistant.exe
 pause
 """
     
-    with open(f'{release_dir}/START_HERE.bat', 'w') as f:
+    with open(f'{release_dir}/START_HERE.bat', 'w', encoding='utf-8') as f:
         f.write(startup_script)
     
     # Create ZIP package
@@ -267,7 +267,7 @@ Section "uninstall"
 SectionEnd
 '''
     
-    with open(f'S3AIAssistant-v{VERSION}-installer.nsi', 'w') as f:
+    with open(f'S3AIAssistant-v{VERSION}-installer.nsi', 'w', encoding='utf-8') as f:
         f.write(nsis_script)
     
     print(f"✅ Created installer script: S3AIAssistant-v{VERSION}-installer.nsi")
@@ -391,7 +391,7 @@ This project is licensed under the MIT License - see the `LICENSE` file for deta
 For support, issues, or feature requests, please visit our [GitHub Issues](https://github.com/your-repo/s3-ai-assistant/issues) page.
 """
     
-    with open(f'RELEASE_NOTES_v{VERSION}.md', 'w') as f:
+    with open(f'RELEASE_NOTES_v{VERSION}.md', 'w', encoding='utf-8') as f:
         f.write(release_notes)
     
     print(f"✅ Created release notes: RELEASE_NOTES_v{VERSION}.md")
@@ -410,8 +410,8 @@ def create_github_release_info():
         "prerelease": False
     }
     
-    with open('github_release.json', 'w') as f:
-        json.dump(release_info, f, indent=2)
+    with open('github_release.json', 'w', encoding='utf-8') as f:
+        json.dump(release_info, f, indent=2, ensure_ascii=False)
     
     print("✅ Created GitHub release info: github_release.json")
 

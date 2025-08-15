@@ -144,28 +144,56 @@ Answer:"""
             docs = retriever.get_relevant_documents(question)
             
             if docs:
-                # Format document snippets for better readability
-                snippets = []
-                for i, doc in enumerate(docs, 1):
-                    src = doc.metadata.get("source", "unknown")
-                    # Clean up the text for better readability
-                    content = doc.page_content[:700]
-                    content = content.replace('\n', ' ')  # Remove line breaks
-                    content = ' '.join(content.split())   # Normalize whitespace
-                    # Add proper spacing around common patterns
-                    content = content.replace('.', '. ').replace('  ', ' ')
-                    content = content.replace('API', ' API').replace('  ', ' ')
-                    content = content.replace('POST', ' POST').replace('  ', ' ')
+                # Try LLM processing with fallback
+                try:
+                    # Method 1: Try direct LLM call with shorter context
+                    context = "\n\n".join([d.page_content[:600] for d in docs])
+                    prompt = f"""You are a technical documentation assistant. The user asked: "{question}"
+
+Based on this information from technical documents, provide a clear, step-by-step answer:
+
+{context}
+
+Please provide:
+1. A direct answer to the question
+2. Step-by-step instructions if applicable  
+3. Any important configuration details
+4. Relevant commands or API calls
+
+Answer:"""
                     
-                    snippets.append(f"📄 Document {i}: {src}\n{'-' * 60}\n{content}...\n")
-                
-                result = "\n".join(snippets)
-                response_cache.set(question, result, "vector_snippets")
-                return QueryResponse(
-                    answer=f"Found {len(docs)} relevant documents:\n\n{result}",
-                    source="vector_snippets",
-                    response_time=time.time() - start_time,
-                )
+                    llm = ModelCache.get_llm()
+                    result = llm.invoke(prompt)
+                    
+                    if result and result.strip():
+                        response_cache.set(question, result, "vector_llm")
+                        return QueryResponse(
+                            answer=result,
+                            source="vector_llm",
+                            response_time=time.time() - start_time,
+                        )
+                    else:
+                        raise ValueError("Empty LLM response")
+                        
+                except Exception as e:
+                    logger.warning(f"LLM processing failed: {e}, falling back to snippets")
+                    
+                    # Fallback: Format document snippets for better readability
+                    from text_formatter import smart_format_text
+                    snippets = []
+                    for i, doc in enumerate(docs, 1):
+                        src = doc.metadata.get("source", "unknown")
+                        filename = src.split('\\')[-1].split('/')[-1]
+                        content = smart_format_text(doc.page_content, max_length=600)
+                        snippets.append(f"📄 Document {i}: {filename}\n{'-' * 60}\n{content}...\n")
+                    
+                    result = "\n".join(snippets)
+                    response_cache.set(question, result, "vector_snippets_fallback")
+                    return QueryResponse(
+                        answer=f"Found {len(docs)} relevant documents (LLM processing failed):\n\n{result}",
+                        source="vector_snippets_fallback", 
+                        response_time=time.time() - start_time,
+                    )
             else:
                 raise ValueError("No relevant documents found")
 

@@ -144,14 +144,22 @@ Answer:"""
             docs = retriever.get_relevant_documents(question)
             
             if docs:
-                # Format document snippets
+                # Format document snippets for better readability
                 snippets = []
                 for i, doc in enumerate(docs, 1):
                     src = doc.metadata.get("source", "unknown")
-                    content = doc.page_content[:500].replace('\n', ' ')
-                    snippets.append(f"[{i}] {src}: {content}")
+                    # Clean up the text for better readability
+                    content = doc.page_content[:700]
+                    content = content.replace('\n', ' ')  # Remove line breaks
+                    content = ' '.join(content.split())   # Normalize whitespace
+                    # Add proper spacing around common patterns
+                    content = content.replace('.', '. ').replace('  ', ' ')
+                    content = content.replace('API', ' API').replace('  ', ' ')
+                    content = content.replace('POST', ' POST').replace('  ', ' ')
+                    
+                    snippets.append(f"📄 Document {i}: {src}\n{'-' * 60}\n{content}...\n")
                 
-                result = "\n\n".join(snippets)
+                result = "\n".join(snippets)
                 response_cache.set(question, result, "vector_snippets")
                 return QueryResponse(
                     answer=f"Found {len(docs)} relevant documents:\n\n{result}",

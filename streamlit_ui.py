@@ -195,9 +195,18 @@ Answer:"""
                         
                         for i, doc in enumerate(docs, 1):
                             src = doc.metadata.get('source', 'unknown')
-                            content = doc.page_content[:600].replace('\n', ' ')
-                            st.write(f"**[{i}] {src}:**")
-                            st.write(content)
+                            # Clean up the text for better readability
+                            content = doc.page_content[:800]
+                            content = content.replace('\n', ' ')  # Remove line breaks
+                            content = ' '.join(content.split())   # Normalize whitespace
+                            # Add proper spacing around common patterns
+                            content = content.replace('.', '. ').replace('  ', ' ')
+                            content = content.replace('API', ' API').replace('  ', ' ')
+                            content = content.replace('POST', ' POST').replace('  ', ' ')
+                            
+                            st.write(f"📄 **Document {i}: {src}**")
+                            with st.expander(f"Read content from {src.split('/')[-1]}", expanded=True):
+                                st.write(content + "...")
                             st.write("---")
                         
                         # Cache the snippets result

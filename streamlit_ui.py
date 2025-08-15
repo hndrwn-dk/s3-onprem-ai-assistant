@@ -175,7 +175,12 @@ Answer:"""
                 progress_bar.progress(50)
                 status_text.text("Vector search...")
                 try:
-                    vector_store = ModelCache.get_vector_store()
+                    # Load vector store directly to avoid threading issues
+                    from langchain_community.embeddings import HuggingFaceEmbeddings
+                    from langchain_community.vectorstores import FAISS
+                    from config import VECTOR_INDEX_PATH, EMBED_MODEL
+                    embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": "cpu"})
+                    vector_store = FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
                     retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
                     llm = ModelCache.get_llm()
                     qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)

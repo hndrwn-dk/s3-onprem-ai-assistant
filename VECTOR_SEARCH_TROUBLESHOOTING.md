@@ -16,12 +16,7 @@ The issue occurs when:
 
 Run the diagnostic script:
 ```bash
-python3 diagnose_vector_search.py
-```
-
-Or use the setup script:
-```bash
-./setup_airgapped.sh
+python diagnose_vector_search.py
 ```
 
 ## Step-by-Step Fix
@@ -36,6 +31,13 @@ ls -la s3_all_chunks.pkl
 ls -la docs/
 ```
 
+**Windows PowerShell:**
+```powershell
+Test-Path .\s3_all_docs
+Test-Path .\s3_all_chunks.pkl
+Get-ChildItem .\docs\
+```
+
 ### 2. Upload Your Documents
 ```bash
 # Place your S3 vendor PDFs in the docs folder
@@ -43,12 +45,17 @@ cp /path/to/your/s3_vendor_docs/*.pdf docs/
 cp /path/to/your/s3_vendor_docs/*.txt docs/
 ```
 
+**Windows PowerShell:**
+```powershell
+Copy-Item "C:\path\to\your\s3_vendor_docs\*.pdf" -Destination ".\docs\"
+```
+
 **Supported formats:** PDF, TXT, MD, JSON
 
 ### 3. Rebuild Vector Index
 ```bash
 # This will process all documents in docs/ folder
-python3 build_embeddings_all.py
+python build_embeddings_all.py
 ```
 
 **Expected output:**
@@ -79,7 +86,7 @@ s3_all_chunks.pkl
 ### Pre-download Required Models
 ```bash
 # For air-gapped environments, pre-download the embedding model
-python3 -c "
+python -c "
 from langchain_community.embeddings import HuggingFaceEmbeddings
 embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
 print('Model downloaded successfully')
@@ -103,7 +110,7 @@ ollama list
 
 ### Issue 2: "Vector store not available"
 **Cause:** Vector index wasn't built or build failed  
-**Solution:** Run `python3 build_embeddings_all.py` after uploading documents
+**Solution:** Run `python build_embeddings_all.py` after uploading documents
 
 ### Issue 3: "ModuleNotFoundError: langchain_community"
 **Cause:** Missing Python dependencies  
@@ -132,7 +139,7 @@ docker-compose build
 
 ### 1. Check Vector Index Health
 ```python
-python3 -c "
+python -c "
 from model_cache import ModelCache
 try:
     vs = ModelCache.get_vector_store()
@@ -148,11 +155,12 @@ except Exception as e:
 
 ### 2. Test Document Loading
 ```python
-python3 -c "
-from utils import load_documents_from_path, ensure_documents_for_embedding
+python -c "
+from utils import load_documents_from_path
 docs = load_documents_from_path()
 print(f'Total documents: {len(docs)}')
-print(f'Real documents available: {ensure_documents_for_embedding()}')
+real_docs = [doc for doc in docs if not doc.metadata.get('source', '').endswith('sample_bucket_metadata_converted.txt')]
+print(f'Real documents: {len(real_docs)}')
 "
 ```
 
@@ -162,6 +170,13 @@ curl -X POST "http://localhost:8000/ask" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your-api-key" \
   -d '{"question": "test query about your uploaded documents"}'
+```
+
+**Windows PowerShell:**
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/ask" -Method POST `
+  -Headers @{"Content-Type"="application/json"; "X-API-Key"="your-api-key"} `
+  -Body '{"question": "What S3 storage classes are available?"}'
 ```
 
 ## File Structure After Fix
@@ -195,10 +210,40 @@ project_root/
 - No uploaded documents in docs folder
 - Dependencies missing or incompatible
 
+## Windows-Specific Instructions
+
+### Virtual Environment Setup
+```powershell
+# Activate venv
+.\venv\Scripts\Activate.ps1
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### File Operations
+```powershell
+# Check file existence
+Test-Path .\s3_all_docs\index.faiss
+Test-Path .\s3_all_chunks.pkl
+
+# Check file sizes
+Get-Item .\s3_all_chunks.pkl | Format-Table Name, Length
+Get-ChildItem .\s3_all_docs\ | Format-Table Name, Length
+```
+
+### Memory Configuration
+```powershell
+# Set environment variables for large files
+$env:CHUNK_SIZE = "500"
+$env:CHUNK_OVERLAP = "50"
+python build_embeddings_all.py
+```
+
 ## Contact & Support
 
 If you continue to experience issues:
-1. Run `python3 diagnose_vector_search.py` for detailed diagnostics
+1. Run `python diagnose_vector_search.py` for detailed diagnostics
 2. Check API logs during startup and query execution
 3. Verify air-gapped environment has all required dependencies
 4. Ensure sufficient memory for processing large PDF documents

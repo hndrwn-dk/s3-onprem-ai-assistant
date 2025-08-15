@@ -70,7 +70,12 @@ with st.sidebar:
                 from build_embeddings_all import build_vector_index
                 build_vector_index()
                 ModelCache.reset_vector_store()
-                ModelCache.get_vector_store()
+                # Load vector store directly to avoid threading issues
+                from langchain_community.embeddings import HuggingFaceEmbeddings
+                from langchain_community.vectorstores import FAISS
+                from config import VECTOR_INDEX_PATH, EMBED_MODEL
+                embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": "cpu"})
+                FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
                 st.success("Embeddings rebuilt and vector store reloaded")
             except Exception as e:
                 st.error(f"Embedding rebuild failed: {e}")

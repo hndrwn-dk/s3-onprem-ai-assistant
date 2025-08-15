@@ -23,6 +23,7 @@ CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "800"))     # Reduced from 1000
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "100"))  # Reduced from 200
 CACHE_TTL_HOURS = int(os.getenv("CACHE_TTL_HOURS", "24"))
 LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "20"))
+VECTOR_LOAD_TIMEOUT_SECONDS = int(os.getenv("VECTOR_LOAD_TIMEOUT_SECONDS", "120"))  # Separate timeout for vector operations
 
 # Quick search settings
 QUICK_SEARCH_MAX_RESULTS = int(os.getenv("QUICK_SEARCH_MAX_RESULTS", "10"))

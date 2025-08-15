@@ -73,11 +73,14 @@ class ModelCache:
                         from utils import check_vector_index_exists, ensure_documents_for_embedding
                         
                         # First check if vector index exists
+                        logger.info(f"Checking vector index at {VECTOR_INDEX_PATH}...")
                         if not check_vector_index_exists():
                             logger.error(f"Vector index not found at {VECTOR_INDEX_PATH}. Please run: python build_embeddings_all.py")
                             raise FileNotFoundError(f"Vector index missing: {VECTOR_INDEX_PATH}")
                         
+                        logger.info("Vector index files found. Loading embeddings model...")
                         embeddings = cls.get_embeddings()
+                        logger.info(f"Loading FAISS index from {VECTOR_INDEX_PATH}...")
                         cls._vector_store = FAISS.load_local(
                             VECTOR_INDEX_PATH,
                             embeddings,

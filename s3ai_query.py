@@ -7,7 +7,7 @@ from model_cache import ModelCache
 from response_cache import response_cache
 from bucket_index import bucket_index
 from langchain.chains import RetrievalQA
-from config import VECTOR_SEARCH_K, LLM_TIMEOUT_SECONDS
+from config import VECTOR_SEARCH_K, LLM_TIMEOUT_SECONDS, VECTOR_LOAD_TIMEOUT_SECONDS
 from utils import logger, timing_decorator
 
 @timing_decorator
@@ -73,9 +73,12 @@ def main():
         import concurrent.futures
         # Load vector store with timeout
         print("[Vector store: loading...]")
+        print(f"[Vector store: timeout set to {VECTOR_LOAD_TIMEOUT_SECONDS}s for large indices...]")
+        vector_load_start = time.time()
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
             fut_vs = ex.submit(ModelCache.get_vector_store)
-            vector_store = fut_vs.result(timeout=LLM_TIMEOUT_SECONDS)
+            vector_store = fut_vs.result(timeout=VECTOR_LOAD_TIMEOUT_SECONDS)
+        print(f"[Vector store: loaded in {time.time() - vector_load_start:.2f}s]")
         if vector_store is None:
             raise RuntimeError("Vector store not available")
         
@@ -124,8 +127,18 @@ def main():
             text = doc.page_content[:500].replace('\n', ' ')
             snippets.append(f"[{i}] {src}: {text}")
         print("\n\n".join(snippets))
-    except concurrent.futures.TimeoutError:
-        print("[Timeout] Operation exceeded the configured timeout. Check vector store size/availability and LLM readiness.")
+    except concurrent.futures.TimeoutError as e:
+        # Determine which operation timed out based on context
+        current_time = time.time()
+        if 'vector_load_start' in locals() and current_time - vector_load_start > VECTOR_LOAD_TIMEOUT_SECONDS - 5:
+            print(f"[Vector Load Timeout] Vector store loading exceeded {VECTOR_LOAD_TIMEOUT_SECONDS}s timeout.")
+            print("This can happen with large indices. Try:")
+            print("1. Set VECTOR_LOAD_TIMEOUT_SECONDS to a higher value (e.g., 300)")
+            print("2. Check available system memory")
+            print("3. Consider rebuilding with smaller chunks: python build_embeddings_all.py")
+        else:
+            print(f"[Operation Timeout] Operation exceeded the configured timeout.")
+            print("Check vector store availability and LLM readiness.")
     except Exception as e:
         print(f"[Vector Search Failed] {e}")
         print("Try rebuilding embeddings: python build_embeddings_all.py")

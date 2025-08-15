@@ -71,10 +71,20 @@ def main():
     print("[Vector search...]")
     try:
         import concurrent.futures
-        # Load vector store (direct call since it's fast)
+        # Load vector store (bypass ModelCache to avoid threading issues)
         print("[Vector store: loading...]")
         vector_load_start = time.time()
-        vector_store = ModelCache.get_vector_store()
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        from langchain_community.vectorstores import FAISS
+        from config import VECTOR_INDEX_PATH, EMBED_MODEL
+        
+        print("[Loading embeddings directly...]")
+        embeddings = HuggingFaceEmbeddings(
+            model_name=EMBED_MODEL,
+            model_kwargs={"device": "cpu"}
+        )
+        print("[Loading FAISS index...]")
+        vector_store = FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
         print(f"[Vector store: loaded in {time.time() - vector_load_start:.2f}s]")
         if vector_store is None:
             raise RuntimeError("Vector store not available")

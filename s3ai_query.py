@@ -106,25 +106,24 @@ def main():
         print(f"[Vector Search Success] Found {len(docs)} relevant documents in {time.time() - start_time:.2f} seconds")
         print("[Note: Showing document snippets directly - LLM processing disabled due to hanging issue]")
         
-        # Show snippets immediately
-        print("Relevant document snippets:")
+        # Show snippets with smart formatting
+        from text_formatter import format_document_snippet, extract_key_info
+        
+        print("\n" + "=" * 80)
+        print("🔍 SEARCH RESULTS - RELEVANT DOCUMENTS")
         print("=" * 80)
+        
         for i, doc in enumerate(docs, 1):
-            src = doc.metadata.get("source", "unknown")
-            # Clean up the text for better readability
-            text = doc.page_content[:800]
-            # Fix common PDF extraction issues
-            text = text.replace('\n', ' ')  # Remove line breaks
-            text = ' '.join(text.split())   # Normalize whitespace
-            # Add proper spacing around common patterns
-            text = text.replace('.', '. ').replace('  ', ' ')
-            text = text.replace('API', ' API').replace('  ', ' ')
-            text = text.replace('POST', ' POST').replace('  ', ' ')
+            formatted_snippet = format_document_snippet(doc, i)
+            print(formatted_snippet)
             
-            print(f"\n📄 Document {i}: {src}")
-            print("-" * 60)
-            print(f"{text}...")
-            print()
+            # Also show key extracted info for the query
+            key_info = extract_key_info(doc.page_content, query)
+            if key_info and key_info != doc.page_content[:400]:
+                print(f"🎯 Key Information:")
+                print(f"{key_info}")
+                print()
+        
         print("=" * 80)
     except concurrent.futures.TimeoutError as e:
         # Determine which operation timed out based on context

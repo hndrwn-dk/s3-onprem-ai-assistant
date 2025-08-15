@@ -102,29 +102,11 @@ def main():
             print("[No relevant documents found]")
             return
         
-        # Process with LLM (no timeout - let it complete naturally)
-        print(f"[Vector Search Hit] Found {len(docs)} relevant documents in {time.time() - start_time:.2f} seconds")
-        print("[AI Processing] Generating response (this may take 30-60 seconds for complex queries)...")
+        # Skip LLM processing for now - show snippets directly
+        print(f"[Vector Search Success] Found {len(docs)} relevant documents in {time.time() - start_time:.2f} seconds")
+        print("[Note: Showing document snippets directly - LLM processing disabled due to hanging issue]")
         
-        try:
-            llm = ModelCache.get_llm()
-            context = "\n\n".join([d.page_content[:800] for d in docs])  # Reduced context size
-            prompt = (
-                "You are a helpful assistant. Use ONLY the provided context to answer the user's question. "
-                "If the answer is not present, say you don't have enough information.\n\n"
-                f"Question: {query}\n\nContext:\n{context}\n\nAnswer:"
-            )
-            result = llm(prompt)
-            if result and result.strip():
-                print(f"[Complete] Total time: {time.time() - start_time:.2f} seconds")
-                print("Answer:", result)
-                response_cache.set(query, result, "vector")
-                return
-        except Exception as e:
-            print(f"[LLM Error] {e}")
-            print("Falling back to document snippets...")
-        
-        # Fallback: show snippets
+        # Show snippets immediately
         print("Relevant document snippets:")
         snippets = []
         for i, doc in enumerate(docs, 1):

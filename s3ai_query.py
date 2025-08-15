@@ -108,12 +108,24 @@ def main():
         
         # Show snippets immediately
         print("Relevant document snippets:")
-        snippets = []
+        print("=" * 80)
         for i, doc in enumerate(docs, 1):
             src = doc.metadata.get("source", "unknown")
-            text = doc.page_content[:500].replace('\n', ' ')
-            snippets.append(f"[{i}] {src}: {text}")
-        print("\n\n".join(snippets))
+            # Clean up the text for better readability
+            text = doc.page_content[:800]
+            # Fix common PDF extraction issues
+            text = text.replace('\n', ' ')  # Remove line breaks
+            text = ' '.join(text.split())   # Normalize whitespace
+            # Add proper spacing around common patterns
+            text = text.replace('.', '. ').replace('  ', ' ')
+            text = text.replace('API', ' API').replace('  ', ' ')
+            text = text.replace('POST', ' POST').replace('  ', ' ')
+            
+            print(f"\n📄 Document {i}: {src}")
+            print("-" * 60)
+            print(f"{text}...")
+            print()
+        print("=" * 80)
     except concurrent.futures.TimeoutError as e:
         # Determine which operation timed out based on context
         current_time = time.time()

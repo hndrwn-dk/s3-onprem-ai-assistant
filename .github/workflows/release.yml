@@ -1,0 +1,98 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller customtkinter
+    
+    - name: Build executable
+      run: |
+        python prepare_release.py
+    
+    - name: Test executable
+      run: |
+        if (Test-Path "dist/S3AIAssistant/S3AIAssistant.exe") {
+          Write-Output "✅ Executable built successfully"
+        } else {
+          Write-Error "❌ Executable not found"
+          exit 1
+        }
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: windows-build
+        path: |
+          S3AIAssistant-v*.zip
+          RELEASE_NOTES_v*.md
+          S3AIAssistant-v*-installer.nsi
+    
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          S3AIAssistant-v*.zip
+        body_path: RELEASE_NOTES_v*.md
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-source:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create source archive
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        if [ -z "$VERSION" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        fi
+        
+        # Create source package
+        tar -czf "S3AIAssistant-v${VERSION}-Source.tar.gz" \
+          --exclude='.git' \
+          --exclude='__pycache__' \
+          --exclude='*.pyc' \
+          --exclude='dist' \
+          --exclude='build' \
+          --exclude='.pytest_cache' \
+          .
+        
+        # Create source zip
+        zip -r "S3AIAssistant-v${VERSION}-Source.zip" . \
+          -x '.git/*' '__pycache__/*' '*.pyc' 'dist/*' 'build/*' '.pytest_cache/*'
+    
+    - name: Upload source artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: source-build
+        path: |
+          S3AIAssistant-v*-Source.*

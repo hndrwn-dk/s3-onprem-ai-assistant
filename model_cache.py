@@ -81,11 +81,20 @@ class ModelCache:
                         logger.info("Vector index files found. Loading embeddings model...")
                         embeddings = cls.get_embeddings()
                         logger.info(f"Loading FAISS index from {VECTOR_INDEX_PATH}...")
-                        cls._vector_store = FAISS.load_local(
-                            VECTOR_INDEX_PATH,
-                            embeddings,
-                            allow_dangerous_deserialization=ALLOW_DANGEROUS_DESERIALIZATION,
-                        )
+                        try:
+                            # Try with allow_dangerous_deserialization for newer langchain versions
+                            cls._vector_store = FAISS.load_local(
+                                VECTOR_INDEX_PATH,
+                                embeddings,
+                                allow_dangerous_deserialization=ALLOW_DANGEROUS_DESERIALIZATION,
+                            )
+                        except TypeError:
+                            # Fall back to older langchain versions without the parameter
+                            logger.info("Falling back to loading without allow_dangerous_deserialization parameter")
+                            cls._vector_store = FAISS.load_local(
+                                VECTOR_INDEX_PATH,
+                                embeddings,
+                            )
                         cls._load_times['vector_store'] = time.time() - start_time
                         logger.info(
                             f"Vector store loaded successfully in {cls._load_times['vector_store']:.2f} seconds"

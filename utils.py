@@ -131,10 +131,17 @@ def ensure_documents_for_embedding() -> bool:
     
     if len(real_docs) == 0:
         logger.warning("No real documents found for embedding - only sample file exists")
+        logger.info("Please upload PDF/TXT/MD/JSON files to the 'docs' folder before building embeddings")
         return False
     
     logger.info(f"Found {len(real_docs)} real documents for embedding")
     return True
+
+def count_uploadable_documents() -> int:
+    """Count documents that are not the sample file"""
+    docs = load_documents_from_path()
+    real_docs = [doc for doc in docs if not doc.metadata.get("source", "").endswith("sample_bucket_metadata_converted.txt")]
+    return len(real_docs)
 
 def quick_relevance_check(query: str, text: str, threshold: int = 1) -> bool:
     """Quick check if text is relevant before expensive processing"""

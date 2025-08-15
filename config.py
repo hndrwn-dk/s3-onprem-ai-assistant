@@ -3,7 +3,7 @@
 import os
 
 # Paths
-DOCS_PATH = "docs"
+DOCS_PATH = "docs"  # This is where users upload their proprietary S3 vendor PDFs
 VECTOR_INDEX_PATH = "s3_all_docs"
 CHUNKS_PATH = "s3_all_chunks.pkl"
 RECENT_QUESTIONS_FILE = "recent_questions.txt"

@@ -4,11 +4,11 @@
 
 ## Quick Start
 
-### 1. Desktop App (Easiest) 🖥️
+### 1. Modern Desktop App (Easiest) 🖥️
 ```bash
-python desktop_app.py
+python modern_desktop_app.py
 ```
-*User-friendly GUI with all features built-in*
+*Beautiful, modern GUI with dark theme and all features built-in*
 
 ### 2. CLI Interface
 ```bash
@@ -62,7 +62,8 @@ python -m uvicorn api:app --reload
 
 ```
 📁 S3 AI Assistant/
-├── 🖥️ desktop_app.py         # Desktop GUI (Recommended)
+├── 🖥️ modern_desktop_app.py   # Modern Desktop GUI (Recommended)
+├── 📱 desktop_app.py         # Classic Desktop GUI
 ├── 🚀 s3ai_query.py          # CLI interface
 ├── 🌐 streamlit_ui.py        # Web interface  
 ├── 🔗 api.py                 # REST API

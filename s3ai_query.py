@@ -71,13 +71,10 @@ def main():
     print("[Vector search...]")
     try:
         import concurrent.futures
-        # Load vector store with timeout
+        # Load vector store (direct call since it's fast)
         print("[Vector store: loading...]")
-        print(f"[Vector store: timeout set to {VECTOR_LOAD_TIMEOUT_SECONDS}s for large indices...]")
         vector_load_start = time.time()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-            fut_vs = ex.submit(ModelCache.get_vector_store)
-            vector_store = fut_vs.result(timeout=VECTOR_LOAD_TIMEOUT_SECONDS)
+        vector_store = ModelCache.get_vector_store()
         print(f"[Vector store: loaded in {time.time() - vector_load_start:.2f}s]")
         if vector_store is None:
             raise RuntimeError("Vector store not available")

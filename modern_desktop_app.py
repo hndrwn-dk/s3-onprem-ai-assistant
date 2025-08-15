@@ -528,9 +528,19 @@ def main():
     try:
         import customtkinter
     except ImportError:
-        print("Installing customtkinter for modern interface...")
-        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'customtkinter'])
-        import customtkinter
+        print("🔧 Installing customtkinter for modern interface...")
+        print("This will take a moment...")
+        try:
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'customtkinter'])
+            print("✅ Installation completed!")
+            print("🔄 Please run the command again: python modern_desktop_app.py")
+            return
+        except Exception as e:
+            print(f"❌ Failed to install customtkinter: {e}")
+            print("📋 Please install manually:")
+            print("   pip install customtkinter")
+            print("   Then run: python modern_desktop_app.py")
+            return
     
     app = ModernS3AIApp()
     app.run()

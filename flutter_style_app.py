@@ -643,7 +643,7 @@ def main(page: ft.Page):
 def run_app():
     # Check if flet is available
     try:
-        import flet
+        import flet as ft
     except ImportError:
         print("Installing flet for Flutter-style interface...")
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'flet'])

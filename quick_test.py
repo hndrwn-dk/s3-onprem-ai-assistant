@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Quick diagnostic script to check what's working
 """
@@ -127,7 +127,7 @@ def test_simple_app():
         
     except ImportError as e:
         print(f"  ❌ PyWebView not available: {e}")
-        print("     Install with: pip3 install pywebview")
+        print("     Install with: pip install pywebview")
         return False
     except Exception as e:
         print(f"  ❌ Window creation failed: {e}")
@@ -138,11 +138,11 @@ def show_solutions():
     print("\n🔧 Common Solutions:")
     print("=" * 40)
     print("1. Install missing dependencies:")
-    print("   pip3 install pywebview streamlit requests")
+    print("   pip install pywebview streamlit requests")
     print()
-    print("2. Use python3 instead of python:")
-    print("   python3 ultra_modern_app.py")
-    print("   python3 fast_start.py")
+    print("2. Run the applications:")
+    print("   python ultra_modern_app.py")
+    print("   python fast_start.py")
     print()
     print("3. Check if Ollama is running:")
     print("   curl http://localhost:11434/api/tags")
@@ -170,7 +170,7 @@ def main():
     print("\n" + "=" * 50)
     if app_works:
         print("🎉 Basic functionality works!")
-        print("Try: python3 ultra_modern_app.py")
+        print("Try: python ultra_modern_app.py")
     else:
         print("⚠️  Issues detected. See solutions below.")
     

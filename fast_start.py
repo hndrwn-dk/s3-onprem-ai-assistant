@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Fast Start Script for S3 On-Premise AI Assistant
 Pre-warms system components for optimal performance
@@ -160,7 +160,7 @@ def start_streamlit_app():
         
         import subprocess
         subprocess.run([
-            sys.executable, '-m', 'streamlit', 'run', 'streamlit_ui.py',
+            'python', '-m', 'streamlit', 'run', 'streamlit_ui.py',
             '--server.port', '8501'
         ])
         

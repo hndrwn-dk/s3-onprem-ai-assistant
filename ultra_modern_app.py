@@ -90,26 +90,26 @@ class S3AIWebApp:
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
             
-            /* Typography Scale */
-            --text-xs: 0.75rem;
-            --text-sm: 0.875rem;
-            --text-base: 1rem;
-            --text-lg: 1.125rem;
-            --text-xl: 1.25rem;
-            --text-2xl: 1.5rem;
-            --text-3xl: 1.875rem;
-            --text-4xl: 2.25rem;
-            
-            /* Spacing */
-            --space-1: 0.25rem;
-            --space-2: 0.5rem;
-            --space-3: 0.75rem;
-            --space-4: 1rem;
-            --space-5: 1.25rem;
-            --space-6: 1.5rem;
-            --space-8: 2rem;
-            --space-10: 2.5rem;
-            --space-12: 3rem;
+                         /* Compact Typography Scale */
+             --text-xs: 0.6rem;
+             --text-sm: 0.75rem;
+             --text-base: 0.85rem;
+             --text-lg: 0.95rem;
+             --text-xl: 1.1rem;
+             --text-2xl: 1.25rem;
+             --text-3xl: 1.5rem;
+             --text-4xl: 1.75rem;
+             
+             /* Compact Spacing */
+             --space-1: 0.2rem;
+             --space-2: 0.4rem;
+             --space-3: 0.6rem;
+             --space-4: 0.8rem;
+             --space-5: 1rem;
+             --space-6: 1.2rem;
+             --space-8: 1.5rem;
+             --space-10: 2rem;
+             --space-12: 2.5rem;
             
             /* Border Radius */
             --radius-sm: 0.375rem;
@@ -139,38 +139,39 @@ class S3AIWebApp:
             -moz-osx-font-smoothing: grayscale;
         }
         
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: var(--space-6);
-            min-height: 100vh;
-        }
-        
-        /* Enterprise Header */
-        .header {
-            background: linear-gradient(135deg, var(--slate-800) 0%, var(--slate-700) 100%);
-            padding: var(--space-8) var(--space-10);
-            border-radius: var(--radius-xl);
-            margin-bottom: var(--space-8);
-            box-shadow: var(--shadow-xl);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-        }
-        
-        .header h1 {
-            font-size: var(--text-4xl);
-            font-weight: 700;
-            color: var(--white);
-            margin-bottom: var(--space-2);
-            letter-spacing: -0.025em;
-        }
-        
-        .header .subtitle {
-            font-size: var(--text-lg);
-            color: var(--slate-300);
-            font-weight: 400;
-            opacity: 0.9;
-        }
+                 .container {
+             max-width: 1600px;
+             margin: 0 auto;
+             padding: var(--space-4);
+             min-height: 100vh;
+         }
+         
+         /* Compact Enterprise Header */
+         .header {
+             background: linear-gradient(135deg, var(--slate-800) 0%, var(--slate-700) 100%);
+             padding: var(--space-5) var(--space-6);
+             border-radius: var(--radius-lg);
+             margin-bottom: var(--space-5);
+             box-shadow: var(--shadow-lg);
+             border: 1px solid rgba(255, 255, 255, 0.1);
+             text-align: center;
+         }
+         
+         .header h1 {
+             font-size: var(--text-3xl);
+             font-weight: 600;
+             color: var(--white);
+             margin-bottom: var(--space-2);
+             letter-spacing: -0.025em;
+         }
+         
+         .header .subtitle {
+             font-size: var(--text-sm);
+             color: var(--slate-300);
+             font-weight: 400;
+             opacity: 0.9;
+             line-height: 1.4;
+         }
         
         .header .enterprise-badge {
             display: inline-flex;
@@ -188,26 +189,26 @@ class S3AIWebApp:
             border: 1px solid rgba(59, 130, 246, 0.3);
         }
         
-        /* Main Layout */
-        .main-grid {
-            display: grid;
-            grid-template-columns: 320px 1fr;
-            gap: var(--space-8);
-            min-height: calc(100vh - 300px);
-        }
-        
-        /* Professional Sidebar */
-        .sidebar {
-            background: var(--card-background);
-            backdrop-filter: blur(10px);
-            border-radius: var(--radius-xl);
-            padding: var(--space-6);
-            box-shadow: var(--shadow-lg);
-            border: 1px solid var(--slate-200);
-            height: fit-content;
-            position: sticky;
-            top: var(--space-6);
-        }
+                 /* Compact Main Layout */
+         .main-grid {
+             display: grid;
+             grid-template-columns: 280px 1fr;
+             gap: var(--space-5);
+             min-height: calc(100vh - 200px);
+         }
+         
+         /* Compact Professional Sidebar */
+         .sidebar {
+             background: var(--card-background);
+             backdrop-filter: blur(10px);
+             border-radius: var(--radius-lg);
+             padding: var(--space-4);
+             box-shadow: var(--shadow-lg);
+             border: 1px solid var(--slate-200);
+             height: fit-content;
+             position: sticky;
+             top: var(--space-4);
+         }
         
         .sidebar h3 {
             font-size: var(--text-lg);
@@ -291,90 +292,79 @@ class S3AIWebApp:
             text-align: center;
         }
         
-        /* Main Content Area */
-        .main-content {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-6);
-        }
+                 /* Compact Main Content Area */
+         .main-content {
+             display: flex;
+             flex-direction: column;
+             gap: var(--space-4);
+         }
+         
+         .card:hover {
+             box-shadow: var(--shadow-lg);
+             transform: translateY(-1px);
+         }
+         
+         .card h3 {
+             font-size: var(--text-lg);
+             font-weight: 600;
+             color: var(--slate-800);
+             margin-bottom: var(--space-3);
+             display: flex;
+             align-items: center;
+             gap: var(--space-2);
+         }
         
-        /* Enterprise Cards */
-        .card {
-            background: var(--card-background);
-            backdrop-filter: blur(10px);
-            border-radius: var(--radius-xl);
-            padding: var(--space-6);
-            box-shadow: var(--shadow-lg);
-            border: 1px solid var(--slate-200);
-            transition: var(--transition);
-        }
+                 /* Compact Performance Dashboard */
+         .metrics-grid {
+             display: grid;
+             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+             gap: var(--space-3);
+             margin-bottom: var(--space-4);
+         }
+         
+         .metric-card {
+             background: linear-gradient(135deg, var(--white) 0%, var(--slate-50) 100%);
+             border: 1px solid var(--slate-200);
+             border-radius: var(--radius);
+             padding: var(--space-3);
+             text-align: center;
+             box-shadow: var(--shadow-sm);
+             transition: var(--transition);
+         }
+         
+         .metric-card:hover {
+             transform: translateY(-1px);
+             box-shadow: var(--shadow);
+         }
+         
+         .metric-label {
+             font-size: var(--text-xs);
+             font-weight: 600;
+             color: var(--slate-500);
+             text-transform: uppercase;
+             letter-spacing: 0.05em;
+             margin-bottom: var(--space-1);
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             gap: var(--space-1);
+         }
+         
+         .metric-value {
+             font-size: var(--text-xl);
+             font-weight: 700;
+             color: var(--slate-800);
+             font-family: 'JetBrains Mono', monospace;
+         }
         
-        .card:hover {
-            box-shadow: var(--shadow-xl);
-            transform: translateY(-2px);
-        }
-        
-        .card h3 {
-            font-size: var(--text-xl);
-            font-weight: 600;
-            color: var(--slate-800);
-            margin-bottom: var(--space-4);
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-        }
-        
-        /* Performance Dashboard */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: var(--space-4);
-            margin-bottom: var(--space-6);
-        }
-        
-        .metric-card {
-            background: linear-gradient(135deg, var(--white) 0%, var(--slate-50) 100%);
-            border: 1px solid var(--slate-200);
-            border-radius: var(--radius-lg);
-            padding: var(--space-5);
-            text-align: center;
-            box-shadow: var(--shadow);
-            transition: var(--transition);
-        }
-        
-        .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .metric-label {
-            font-size: var(--text-xs);
-            font-weight: 600;
-            color: var(--slate-500);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: var(--space-2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: var(--space-1);
-        }
-        
-        .metric-value {
-            font-size: var(--text-2xl);
-            font-weight: 700;
-            color: var(--slate-800);
-            font-family: 'JetBrains Mono', monospace;
-        }
-        
-        /* Query Interface */
-        .query-section {
-            background: var(--card-background);
-            border-radius: var(--radius-xl);
-            padding: var(--space-8);
-            box-shadow: var(--shadow-lg);
-            border: 1px solid var(--slate-200);
-        }
+                 /* Compact Query Interface */
+         .query-section {
+             background: var(--card-background);
+             border-radius: var(--radius-lg);
+             padding: var(--space-4);
+             box-shadow: var(--shadow);
+             border: 1px solid var(--slate-200);
+         }
         
         .query-input {
             width: 100%;
@@ -436,20 +426,21 @@ class S3AIWebApp:
             border: 1px solid #fecaca;
         }
         
-        /* Results Area */
-        .results-area {
-            background: var(--slate-50);
-            border-radius: var(--radius-lg);
-            padding: var(--space-6);
-            margin-top: var(--space-4);
-            border: 1px solid var(--slate-200);
-            min-height: 200px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: var(--text-sm);
-            line-height: 1.7;
-            white-space: pre-wrap;
-            overflow-y: auto;
-        }
+                 /* Compact Results Area */
+         .results-area {
+             background: var(--slate-50);
+             border-radius: var(--radius);
+             padding: var(--space-4);
+             margin-top: var(--space-3);
+             border: 1px solid var(--slate-200);
+             min-height: 150px;
+             max-height: 300px;
+             font-family: 'JetBrains Mono', monospace;
+             font-size: var(--text-sm);
+             line-height: 1.5;
+             white-space: pre-wrap;
+             overflow-y: auto;
+         }
         
         /* Progress Bar */
         .progress-container {
@@ -636,12 +627,8 @@ class S3AIWebApp:
     <div class="container">
         <!-- Enterprise Header -->
         <div class="header">
-            <h1>🏢 Enterprise AI Assistant</h1>
-            <p class="subtitle">Advanced S3 Analytics Platform • Cloudian • IBM • MinIO • Metadata Intelligence</p>
-            <div class="enterprise-badge">
-                <span>🚀</span>
-                Professional Edition v3.0
-            </div>
+            <h1>🏢 S3 On-Premise AI Assistant</h1>
+            <p class="subtitle">Fully offline-capable AI assistant for answering operational, admin, and troubleshooting questions for on-premises S3-compatible platforms</p>
         </div>
         
         <div class="main-grid">

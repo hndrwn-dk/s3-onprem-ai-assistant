@@ -40,9 +40,48 @@ class S3AIWebApp:
         return window
     
     def run(self):
-        """Start the application"""
-        window = self.create_window()
-        webview.start(debug=False)
+        """Start the application with debugging"""
+        try:
+            window = self.create_window()
+            print("🖥️  Desktop window created successfully")
+            print("🔍 Debug mode enabled - check console for API calls")
+            print("🌐 Window should open in a few seconds...")
+            print("❌ If window doesn't open, use web interface: python -m streamlit run streamlit_ui.py")
+            print("-" * 60)
+            webview.start(debug=True)  # Enable debug mode
+        except Exception as e:
+            print(f"❌ Desktop app failed: {e}")
+            print("🌐 Falling back to web interface...")
+            self.start_web_fallback()
+    
+    def start_web_fallback(self):
+        """Start web interface as fallback"""
+        try:
+            import subprocess
+            import webbrowser
+            import time
+            
+            print("🌐 Starting Streamlit web interface...")
+            
+            # Start Streamlit
+            process = subprocess.Popen([
+                'python', '-m', 'streamlit', 'run', 'streamlit_ui.py',
+                '--server.port', '8501'
+            ])
+            
+            # Wait and open browser
+            time.sleep(3)
+            webbrowser.open('http://localhost:8501')
+            
+            print("✅ Web interface started at: http://localhost:8501")
+            print("❌ To stop: Press Ctrl+C")
+            
+            # Wait for process
+            process.wait()
+            
+        except Exception as e:
+            print(f"❌ Web fallback failed: {e}")
+            print("💡 Try manually: python -m streamlit run streamlit_ui.py")
     
     def get_html_content(self):
         """Generate enterprise-grade HTML interface"""
@@ -1044,14 +1083,17 @@ class S3AIWebAPI:
     
     def query(self, query_text):
         """Handle query execution with optimized performance - matches Streamlit UI approach"""
+        print(f"🔍 API: Query received: '{query_text}'")
         start_time = time.time()
         
         try:
             # Step 1: Check cache first (fastest - <0.1s)
+            print("🔍 API: Checking cache...")
             response_cache = self._get_response_cache()
             cached_response = response_cache.get(query_text)
             
             if cached_response:
+                print(f"⚡ API: Cache hit! Response time: {time.time() - start_time:.3f}s")
                 return {
                     "answer": cached_response,
                     "source": "cache",
@@ -1061,10 +1103,12 @@ class S3AIWebAPI:
                 }
             
             # Step 2: Try quick bucket search (fast - 0.1-1s)
+            print("🚀 API: Trying quick bucket search...")
             bucket_index = self._get_bucket_index()
             quick_result = bucket_index.quick_search(query_text)
             
             if quick_result:
+                print(f"🚀 API: Quick search found results!")
                 # Check if AI formatting is needed
                 try:
                     model_cache = self._get_model_cache()
@@ -1116,9 +1160,11 @@ Provide a clear, concise answer:"""
                 }
             
             # Step 3: Vector search (slower but comprehensive - 1-5s)
+            print("🎯 API: Trying vector search...")
             try:
                 model_cache = self._get_model_cache()
                 vector_store = model_cache.get_vector_store()
+                print("🎯 API: Vector store loaded")
                 
                 if vector_store:
                     from langchain.chains import RetrievalQA
@@ -1224,6 +1270,7 @@ Answer:"""
     
     def upload_files(self):
         """Handle file upload dialog"""
+        print("📁 API: Upload files called")
         try:
             root = tk.Tk()
             root.withdraw()  # Hide the main window
@@ -1267,6 +1314,7 @@ Answer:"""
     
     def build_index(self):
         """Handle optimized index building with progress feedback"""
+        print("🔄 API: Build index called")
         try:
             # Direct import for faster execution
             from build_embeddings_all import build_vector_index
@@ -1316,6 +1364,7 @@ Answer:"""
     
     def open_web_ui(self):
         """Handle web UI opening"""
+        print("🌐 API: Open web UI called")
         try:
             subprocess.Popen([
                 sys.executable, '-m', 'streamlit', 'run', 'streamlit_ui.py',
@@ -1333,6 +1382,7 @@ Answer:"""
     
     def start_api(self):
         """Handle API starting"""
+        print("🔌 API: Start API server called")
         try:
             subprocess.Popen([
                 sys.executable, '-m', 'uvicorn', 'api:app',

@@ -4,19 +4,11 @@
 
 ## Quick Start
 
-### 1. Ultra-Modern Desktop Apps 🖥️
-
-**🌟 Web-Style Interface (Recommended):**
+### 1. Ultra-Modern Desktop App 🖥️
 ```bash
 python ultra_modern_app.py
 ```
-*Web-app-like experience with HTML/CSS/JS - looks like Discord/Slack*
-
-**📱 Flutter-Style Interface:**
-```bash
-python flutter_style_app.py
-```
-*Mobile-app-like experience with Material Design - looks like a Flutter/React app*
+*Beautiful web-app-like experience with HTML/CSS/JS - looks like Discord/Slack with gradient backgrounds and smooth animations*
 
 ### 2. CLI Interface
 ```bash
@@ -70,8 +62,7 @@ python -m uvicorn api:app --reload
 
 ```
 📁 S3 AI Assistant/
-├── 🌟 ultra_modern_app.py     # Web-Style Desktop GUI (Recommended)
-├── 📱 flutter_style_app.py    # Flutter-Style Desktop GUI
+├── 🌟 ultra_modern_app.py     # Ultra-Modern Desktop GUI (Recommended)
 ├── 🚀 s3ai_query.py          # CLI interface
 ├── 🌐 streamlit_ui.py        # Web interface  
 ├── 🔗 api.py                 # REST API

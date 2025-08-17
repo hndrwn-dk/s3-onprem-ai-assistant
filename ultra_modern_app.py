@@ -727,11 +727,17 @@ class S3AIWebApp:
                         <span>Processing your query...</span>
                     </div>
                     
-                    <div id="results" class="results-area">
-                        <div style="color: var(--slate-500); font-style: italic; text-align: center; padding: 2rem;">
-                            Ready to process your enterprise queries...
-                        </div>
-                    </div>
+                                         <div id="results" class="results-area">
+                         <div style="color: var(--slate-500); font-style: italic; text-align: center; padding: 1.5rem;">
+                             <div style="margin-bottom: 1rem;">Ready to process your enterprise queries...</div>
+                             <div style="font-size: 0.7rem; color: var(--slate-400);">
+                                 💡 <strong>Performance Tips:</strong><br>
+                                 • First-time queries: 1-5 seconds<br>
+                                 • Repeated queries: <0.1 seconds (cached)<br>
+                                 • Upload docs → Build index for best results
+                             </div>
+                         </div>
+                     </div>
                 </div>
             </div>
         </div>
@@ -799,14 +805,23 @@ class S3AIWebApp:
         }
         
         async function buildIndex() {
+            // Show warning about build time
+            if (!confirm('Building the knowledge base index may take 30 seconds to 5 minutes depending on document count.\n\nThis is a one-time process that will significantly improve query performance.\n\nContinue?')) {
+                return;
+            }
+            
             setStatus('🔄 Building knowledge base index...');
             showProgress(true);
             
+            const startTime = performance.now();
+            
             try {
                 const result = await pywebview.api.build_index();
+                const buildTime = ((performance.now() - startTime) / 1000).toFixed(1);
                 
                 if (result.success) {
-                    showAlert('✅ Knowledge base index built successfully', 'success');
+                    const fileCount = result.file_count || 'unknown';
+                    showAlert(`✅ Knowledge base built successfully in ${buildTime}s for ${fileCount} documents. Queries will now be much faster!`, 'success');
                 } else {
                     showAlert(`❌ Index build failed: ${result.error}`, 'error');
                 }
@@ -851,31 +866,57 @@ class S3AIWebApp:
             const timestamp = new Date().toLocaleTimeString();
             
             let statusBadge = '';
+            let performanceClass = '';
+            
             if (result.cached) {
                 statusBadge = '<span class="status-indicator status-online">⚡ Cached Result</span>';
+                performanceClass = 'performance-excellent';
             } else if (result.source === 'quick_search') {
-                statusBadge = '<span class="status-indicator status-processing">🚀 Quick Search</span>';
+                statusBadge = '<span class="status-indicator status-info">🚀 Quick Search</span>';
+                performanceClass = 'performance-good';
             } else if (result.source === 'vector') {
                 statusBadge = '<span class="status-indicator status-processing">🎯 Vector Search</span>';
+                performanceClass = 'performance-normal';
+            } else if (result.source === 'fallback') {
+                statusBadge = '<span class="status-indicator status-warning">🔄 Fallback Search</span>';
+                performanceClass = 'performance-slow';
+            } else if (result.source === 'no_results') {
+                statusBadge = '<span class="status-indicator status-warning">❌ No Results</span>';
+                performanceClass = 'performance-none';
             } else {
-                statusBadge = '<span class="status-indicator status-processing">🔄 Fallback Search</span>';
+                statusBadge = '<span class="status-indicator status-error">❌ Error</span>';
+                performanceClass = 'performance-error';
             }
+            
+            // Use actual response time from backend
+            const actualResponseTime = result.response_time ? result.response_time.toFixed(2) : responseTime;
             
             resultsDiv.innerHTML = `
                 <div style="margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--slate-200); display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         ${statusBadge}
                         <span style="color: var(--slate-500); font-size: var(--text-xs); margin-left: 1rem;">
-                            ${responseTime}s • ${timestamp}
+                            ${actualResponseTime}s • ${timestamp}
                         </span>
                     </div>
                 </div>
-                <div style="color: var(--slate-800); line-height: 1.6;">
+                <div style="color: var(--slate-800); line-height: 1.6; white-space: pre-wrap;">
                     ${result.answer || result.response || 'No response received'}
                 </div>
             `;
             
             resultsDiv.classList.add('fade-in');
+            
+            // Update performance indicator
+            if (actualResponseTime < 0.1) {
+                updateMetric('system-load', 'Excellent');
+            } else if (actualResponseTime < 1) {
+                updateMetric('system-load', 'Good');
+            } else if (actualResponseTime < 3) {
+                updateMetric('system-load', 'Normal');
+            } else {
+                updateMetric('system-load', 'Slow');
+            }
         }
         
         function displayError(error) {
@@ -972,40 +1013,152 @@ class S3AIWebApp:
         """
 
 class S3AIWebAPI:
-    """API class for handling web interface interactions"""
+    """High-Performance API class for handling web interface interactions"""
+    
+    def __init__(self):
+        # Initialize caches for performance
+        self._model_cache = None
+        self._response_cache = None
+        self._bucket_index = None
+        
+    def _get_model_cache(self):
+        """Lazy load model cache"""
+        if self._model_cache is None:
+            from model_cache import ModelCache
+            self._model_cache = ModelCache
+        return self._model_cache
+    
+    def _get_response_cache(self):
+        """Lazy load response cache"""
+        if self._response_cache is None:
+            from response_cache import response_cache
+            self._response_cache = response_cache
+        return self._response_cache
+    
+    def _get_bucket_index(self):
+        """Lazy load bucket index"""
+        if self._bucket_index is None:
+            from bucket_index import bucket_index
+            self._bucket_index = bucket_index
+        return self._bucket_index
     
     def query(self, query_text):
-        """Handle query execution"""
+        """Handle query execution with optimized performance"""
+        start_time = time.time()
+        
         try:
-            # Import here to avoid circular imports
-            from s3ai_query import main as query_main
-            import sys
-            from io import StringIO
+            # Step 1: Check cache first (fastest)
+            response_cache = self._get_response_cache()
+            cached_response = response_cache.get(query_text)
             
-            # Capture output
-            old_stdout = sys.stdout
-            sys.stdout = captured_output = StringIO()
+            if cached_response:
+                return {
+                    "answer": cached_response,
+                    "source": "cache",
+                    "cached": True,
+                    "success": True,
+                    "response_time": time.time() - start_time
+                }
             
-            try:
-                # Execute query
-                result = query_main([query_text])
-                output = captured_output.getvalue()
+            # Step 2: Try quick bucket search (fast)
+            bucket_index = self._get_bucket_index()
+            quick_result = bucket_index.quick_search(query_text)
+            
+            if quick_result:
+                # Cache the quick result
+                response_cache.set(query_text, quick_result, "quick_search")
                 
                 return {
-                    "answer": output or "No response generated",
-                    "source": "s3ai_query",
+                    "answer": quick_result,
+                    "source": "quick_search",
                     "cached": False,
-                    "success": True
+                    "success": True,
+                    "response_time": time.time() - start_time
                 }
-            finally:
-                sys.stdout = old_stdout
+            
+            # Step 3: Vector search (slower but comprehensive)
+            try:
+                model_cache = self._get_model_cache()
+                vector_store = model_cache.get_vector_store()
+                
+                if vector_store:
+                    from langchain.chains import RetrievalQA
+                    from config import VECTOR_SEARCH_K, LLM_TIMEOUT_SECONDS
+                    
+                    retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
+                    llm = model_cache.get_llm()
+                    qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
+                    
+                    # Use timeout to prevent hanging
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                        future = executor.submit(qa_chain.run, query_text)
+                        response = future.result(timeout=LLM_TIMEOUT_SECONDS)
+                    
+                    if response and response.strip():
+                        # Cache the vector result
+                        response_cache.set(query_text, response, "vector")
+                        
+                        return {
+                            "answer": response,
+                            "source": "vector",
+                            "cached": False,
+                            "success": True,
+                            "response_time": time.time() - start_time
+                        }
+                
+            except Exception as vector_error:
+                print(f"Vector search failed: {vector_error}")
+            
+            # Step 4: Fallback to text search
+            try:
+                from utils import load_txt_documents, search_in_fallback_text
+                fallback_text = load_txt_documents()
+                
+                if fallback_text:
+                    relevant_context = search_in_fallback_text(query_text, fallback_text)
+                    if relevant_context:
+                        model_cache = self._get_model_cache()
+                        llm = model_cache.get_llm()
+                        
+                        prompt = f"""Based on this information:
+{relevant_context}
+
+Question: {query_text}
+Answer:"""
+                        
+                        result = llm(prompt)
+                        if result:
+                            # Cache the fallback result
+                            response_cache.set(query_text, result, "txt_fallback")
+                            
+                            return {
+                                "answer": result,
+                                "source": "fallback",
+                                "cached": False,
+                                "success": True,
+                                "response_time": time.time() - start_time
+                            }
+            
+            except Exception as fallback_error:
+                print(f"Fallback search failed: {fallback_error}")
+            
+            # If all methods fail
+            return {
+                "answer": "No relevant information found for your query. Please try:\n• Adding more documents to the knowledge base\n• Rebuilding the index\n• Using different keywords",
+                "source": "no_results",
+                "cached": False,
+                "success": False,
+                "response_time": time.time() - start_time
+            }
                 
         except Exception as e:
             return {
                 "answer": f"Error processing query: {str(e)}",
                 "source": "error",
                 "cached": False,
-                "success": False
+                "success": False,
+                "response_time": time.time() - start_time
             }
     
     def upload_files(self):
@@ -1052,35 +1205,53 @@ class S3AIWebAPI:
             return {"success": False, "error": str(e)}
     
     def build_index(self):
-        """Handle index building"""
+        """Handle optimized index building with progress feedback"""
         try:
-            # Check if running as executable or from source
-            if getattr(sys, 'frozen', False):
-                app_dir = sys._MEIPASS
-                build_script = os.path.join(app_dir, 'build_embeddings_all.py')
-                cmd = [sys.executable, build_script]
-                cwd = app_dir
-            else:
-                cmd = [sys.executable, 'build_embeddings_all.py']
-                cwd = os.getcwd()
+            # Direct import for faster execution
+            from build_embeddings_all import build_vector_index
+            from pathlib import Path
             
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=1800,  # 30 minutes
-                cwd=cwd
-            )
+            # Check if docs directory exists and has files
+            docs_path = Path("docs")
+            if not docs_path.exists() or not any(docs_path.iterdir()):
+                return {
+                    "success": False, 
+                    "error": "No documents found in docs/ directory. Please upload documents first."
+                }
             
-            if result.returncode == 0:
-                return {"success": True, "message": "Index built successfully"}
-            else:
-                return {"success": False, "error": result.stderr or "Build failed"}
+            # Count files for progress estimation
+            doc_files = list(docs_path.glob("*.txt")) + list(docs_path.glob("*.md")) + list(docs_path.glob("*.pdf"))
+            file_count = len(doc_files)
+            
+            if file_count == 0:
+                return {
+                    "success": False,
+                    "error": "No supported document files found. Supported formats: PDF, TXT, MD"
+                }
+            
+            # Build index directly (faster than subprocess)
+            build_vector_index()
+            
+            # Clear model cache to reload new index
+            model_cache = self._get_model_cache()
+            model_cache.reset_vector_store()
+            
+            return {
+                "success": True, 
+                "message": f"Index built successfully for {file_count} documents",
+                "file_count": file_count
+            }
                 
-        except subprocess.TimeoutExpired:
-            return {"success": False, "error": "Build timed out after 30 minutes"}
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            error_msg = str(e)
+            if "sentence-transformers" in error_msg:
+                error_msg = "Missing sentence-transformers. Install with: pip install sentence-transformers"
+            elif "faiss" in error_msg:
+                error_msg = "Missing FAISS. Install with: pip install faiss-cpu"
+            elif "No module named" in error_msg:
+                error_msg = f"Missing dependency: {error_msg}"
+            
+            return {"success": False, "error": error_msg}
     
     def open_web_ui(self):
         """Handle web UI opening"""

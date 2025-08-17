@@ -10,25 +10,13 @@
 ```bash
 python ultra_modern_app.py
 ```
-*Web-app-like experience with HTML/CSS/JS - looks like a modern web application*
+*Web-app-like experience with HTML/CSS/JS - looks like Discord/Slack*
 
 **📱 Flutter-Style Interface:**
 ```bash
 python flutter_style_app.py
 ```
 *Mobile-app-like experience with Material Design - looks like a Flutter/React app*
-
-**🎨 CustomTkinter Interface:**
-```bash
-python modern_desktop_app.py
-```
-*Modern dark theme with contemporary styling*
-
-**📟 Classic Interface:**
-```bash
-python desktop_app.py
-```
-*Traditional desktop app (backup option)*
 
 ### 2. CLI Interface
 ```bash
@@ -82,8 +70,8 @@ python -m uvicorn api:app --reload
 
 ```
 📁 S3 AI Assistant/
-├── 🖥️ modern_desktop_app.py   # Modern Desktop GUI (Recommended)
-├── 📱 desktop_app.py         # Classic Desktop GUI
+├── 🌟 ultra_modern_app.py     # Web-Style Desktop GUI (Recommended)
+├── 📱 flutter_style_app.py    # Flutter-Style Desktop GUI
 ├── 🚀 s3ai_query.py          # CLI interface
 ├── 🌐 streamlit_ui.py        # Web interface  
 ├── 🔗 api.py                 # REST API

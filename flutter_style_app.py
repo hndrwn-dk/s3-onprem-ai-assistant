@@ -32,7 +32,7 @@ class S3AIFlutterApp:
         
         # Modern color scheme
         self.page.theme = ft.Theme(
-            color_scheme_seed=ft.colors.INDIGO,
+            color_scheme_seed=ft.Colors.INDIGO,
             use_material3=True
         )
     
@@ -42,8 +42,8 @@ class S3AIFlutterApp:
         self.page.appbar = ft.AppBar(
             title=ft.Text("🚀 S3 AI Assistant", size=24, weight=ft.FontWeight.BOLD),
             center_title=True,
-            bgcolor=ft.colors.INDIGO,
-            color=ft.colors.WHITE,
+            bgcolor=ft.Colors.INDIGO,
+            color=ft.Colors.WHITE,
             actions=[
                 ft.IconButton(
                     icon=ft.icons.SETTINGS,
@@ -59,7 +59,7 @@ class S3AIFlutterApp:
         )
         
         # Status and progress
-        self.status_text = ft.Text("Ready", size=14, color=ft.colors.GREY_600)
+        self.status_text = ft.Text("Ready", size=14, color=ft.Colors.GREY_600)
         self.progress_bar = ft.ProgressBar(width=200, height=4, visible=False)
         
         # Query input
@@ -75,8 +75,8 @@ class S3AIFlutterApp:
             text="Ask",
             icon=ft.icons.SEND,
             style=ft.ButtonStyle(
-                bgcolor=ft.colors.INDIGO,
-                color=ft.colors.WHITE,
+                bgcolor=ft.Colors.INDIGO,
+                color=ft.Colors.WHITE,
                 padding=ft.padding.all(16)
             ),
             on_click=self.ask_question
@@ -86,10 +86,10 @@ class S3AIFlutterApp:
         self.results_container = ft.Container(
             content=self.create_welcome_content(),
             expand=True,
-            bgcolor=ft.colors.GREY_50,
+            bgcolor=ft.Colors.GREY_50,
             border_radius=12,
             padding=20,
-            border=ft.border.all(1, ft.colors.GREY_300)
+            border=ft.border.all(1, ft.Colors.GREY_300)
         )
         
         # Sidebar with actions
@@ -130,7 +130,7 @@ class S3AIFlutterApp:
                 self.query_input,
                 self.ask_button
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-            ft.Divider(height=20, color=ft.colors.TRANSPARENT),
+            ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
             ft.Text("💬 AI Response", size=18, weight=ft.FontWeight.BOLD),
             self.results_container,
             ft.Row([
@@ -159,9 +159,9 @@ class S3AIFlutterApp:
                    size=28, weight=ft.FontWeight.BOLD, 
                    text_align=ft.TextAlign.CENTER),
             ft.Text("Your intelligent companion for S3 storage documentation",
-                   size=16, color=ft.colors.GREY_600,
+                   size=16, color=ft.Colors.GREY_600,
                    text_align=ft.TextAlign.CENTER),
-            ft.Divider(height=40, color=ft.colors.TRANSPARENT),
+            ft.Divider(height=40, color=ft.Colors.TRANSPARENT),
             
             # Feature cards
             ft.Row([
@@ -171,10 +171,10 @@ class S3AIFlutterApp:
                 self.create_feature_card("🎨", "Modern UI", "Beautiful interface"),
             ], alignment=ft.MainAxisAlignment.SPACE_AROUND, wrap=True),
             
-            ft.Divider(height=40, color=ft.colors.TRANSPARENT),
+            ft.Divider(height=40, color=ft.Colors.TRANSPARENT),
             ft.Text("🚀 Quick Start:", size=18, weight=ft.FontWeight.BOLD),
             ft.Text("1. Add Documents → 2. Build Index → 3. Ask Questions", 
-                   size=14, color=ft.colors.GREY_600)
+                   size=14, color=ft.Colors.GREY_600)
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10)
     
     def create_feature_card(self, icon, title, description):
@@ -183,17 +183,17 @@ class S3AIFlutterApp:
             content=ft.Column([
                 ft.Text(icon, size=32),
                 ft.Text(title, size=16, weight=ft.FontWeight.BOLD),
-                ft.Text(description, size=12, color=ft.colors.GREY_600, text_align=ft.TextAlign.CENTER)
+                ft.Text(description, size=12, color=ft.Colors.GREY_600, text_align=ft.TextAlign.CENTER)
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=5),
             width=200,
             height=120,
-            bgcolor=ft.colors.WHITE,
+            bgcolor=ft.Colors.WHITE,
             border_radius=12,
             padding=15,
             shadow=ft.BoxShadow(
                 spread_radius=1,
                 blur_radius=15,
-                color=ft.colors.with_opacity(0.1, ft.colors.BLACK),
+                color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK),
                 offset=ft.Offset(0, 5)
             )
         )
@@ -206,10 +206,10 @@ class S3AIFlutterApp:
             self.progress_bar.visible = progress > 0
         self.page.update()
     
-    def show_snackbar(self, message, bgcolor=ft.colors.GREEN):
+    def show_snackbar(self, message, bgcolor=ft.Colors.GREEN):
         """Show snackbar notification"""
         self.page.snack_bar = ft.SnackBar(
-            content=ft.Text(message, color=ft.colors.WHITE),
+            content=ft.Text(message, color=ft.Colors.WHITE),
             bgcolor=bgcolor
         )
         self.page.snack_bar.open = True
@@ -232,7 +232,7 @@ class S3AIFlutterApp:
         """Ask a question"""
         question = self.query_input.value.strip()
         if not question:
-            self.show_snackbar("Please enter a question", ft.colors.ORANGE)
+            self.show_snackbar("Please enter a question", ft.Colors.ORANGE)
             return
         
         self.ask_button.disabled = True
@@ -244,7 +244,7 @@ class S3AIFlutterApp:
                 ft.ProgressRing(),
                 ft.Text("🤔 Thinking about your question...", size=16),
                 ft.Text("This may take 30-60 seconds for complex queries", 
-                       size=12, color=ft.colors.GREY_600)
+                       size=12, color=ft.Colors.GREY_600)
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
             padding=40
         )
@@ -310,7 +310,7 @@ class S3AIFlutterApp:
                     error_msg = result.stderr if result.stderr else "No response received"
                     self.results_container.content = ft.Container(
                         content=ft.Column([
-                            ft.Text("❌ Error:", size=16, weight=ft.FontWeight.BOLD, color=ft.colors.RED),
+                            ft.Text("❌ Error:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.RED),
                             ft.Text(error_msg, size=14),
                             ft.Divider(),
                             ft.Text("Troubleshooting:", weight=ft.FontWeight.BOLD),
@@ -321,7 +321,7 @@ class S3AIFlutterApp:
                         padding=20
                     )
                     self.update_status("❌ Error occurred", 0)
-                    self.show_snackbar("Failed to get answer", ft.colors.RED)
+                    self.show_snackbar("Failed to get answer", ft.Colors.RED)
                 
                 self.ask_button.disabled = False
                 self.ask_button.text = "Ask"
@@ -332,13 +332,13 @@ class S3AIFlutterApp:
         except Exception as e:
             def error_ui():
                 self.results_container.content = ft.Container(
-                    content=ft.Text(f"❌ Error: {str(e)}", color=ft.colors.RED),
+                    content=ft.Text(f"❌ Error: {str(e)}", color=ft.Colors.RED),
                     padding=20
                 )
                 self.ask_button.disabled = False
                 self.ask_button.text = "Ask"
                 self.update_status("❌ Error occurred", 0)
-                self.show_snackbar("Request failed", ft.colors.RED)
+                self.show_snackbar("Request failed", ft.Colors.RED)
             
             self.page.run_thread(error_ui)
     
@@ -376,7 +376,7 @@ class S3AIFlutterApp:
                             shutil.copy2(file_path, dest_path)
                             copied_files.append(Path(file_path).name)
                         except Exception as e:
-                            self.page.run_thread(lambda: self.show_snackbar(f"Failed to copy {file_path}", ft.colors.RED))
+                            self.page.run_thread(lambda: self.show_snackbar(f"Failed to copy {file_path}", ft.Colors.RED))
                             return
                     
                     def success_ui():
@@ -385,10 +385,10 @@ class S3AIFlutterApp:
                     
                     self.page.run_thread(success_ui)
                 else:
-                    self.page.run_thread(lambda: self.show_snackbar("No files selected", ft.colors.ORANGE))
+                    self.page.run_thread(lambda: self.show_snackbar("No files selected", ft.Colors.ORANGE))
                     
             except Exception as e:
-                self.page.run_thread(lambda: self.show_snackbar(f"Error: {str(e)}", ft.colors.RED))
+                self.page.run_thread(lambda: self.show_snackbar(f"Error: {str(e)}", ft.Colors.RED))
         
         self.update_status("📁 Opening file dialog...", 20)
         threading.Thread(target=_add_docs, daemon=True).start()
@@ -434,7 +434,7 @@ class S3AIFlutterApp:
                         ft.Text("• Splits them into chunks"),
                         ft.Text("• Creates embeddings"),
                         ft.Text("• Builds searchable index"),
-                        ft.Text("Please wait...", color=ft.colors.GREY_600)
+                        ft.Text("Please wait...", color=ft.Colors.GREY_600)
                     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=5),
                     padding=40
                 )))
@@ -464,11 +464,11 @@ class S3AIFlutterApp:
                     if result.returncode == 0:
                         self.results_container.content = ft.Container(
                             content=ft.Column([
-                                ft.Icon(ft.icons.CHECK_CIRCLE, color=ft.colors.GREEN, size=48),
+                                ft.Icon(ft.icons.CHECK_CIRCLE, color=ft.Colors.GREEN, size=48),
                                 ft.Text("✅ Vector index built successfully!", size=18, weight=ft.FontWeight.BOLD),
                                 ft.Text("🎉 Your documents are now ready for AI-powered search."),
                                 ft.Text("You can now ask questions about your S3 documentation and get intelligent answers."),
-                                ft.Text("💡 Try asking a question above!", color=ft.colors.INDIGO)
+                                ft.Text("💡 Try asking a question above!", color=ft.Colors.INDIGO)
                             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
                             padding=40
                         )
@@ -477,8 +477,8 @@ class S3AIFlutterApp:
                     else:
                         self.results_container.content = ft.Container(
                             content=ft.Column([
-                                ft.Icon(ft.icons.ERROR, color=ft.colors.RED, size=48),
-                                ft.Text("❌ Build failed:", size=18, weight=ft.FontWeight.BOLD, color=ft.colors.RED),
+                                ft.Icon(ft.icons.ERROR, color=ft.Colors.RED, size=48),
+                                ft.Text("❌ Build failed:", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.RED),
                                 ft.Text(result.stderr or "Unknown error"),
                                 ft.Divider(),
                                 ft.Text("Troubleshooting:", weight=ft.FontWeight.BOLD),
@@ -489,14 +489,14 @@ class S3AIFlutterApp:
                             padding=40
                         )
                         self.update_status("❌ Build failed", 0)
-                        self.show_snackbar("Build failed", ft.colors.RED)
+                        self.show_snackbar("Build failed", ft.Colors.RED)
                     
                     self.page.update()
                 
                 self.page.run_thread(finish_ui)
                 
             except Exception as e:
-                self.page.run_thread(lambda: self.show_snackbar(f"Build error: {str(e)}", ft.colors.RED))
+                self.page.run_thread(lambda: self.show_snackbar(f"Build error: {str(e)}", ft.Colors.RED))
         
         threading.Thread(target=_build, daemon=True).start()
     
@@ -520,7 +520,7 @@ class S3AIFlutterApp:
                 self.page.run_thread(lambda: self.update_status("🌐 Web UI opened in browser", 100))
                 
             except Exception as e:
-                self.page.run_thread(lambda: self.show_snackbar(f"Failed to start web UI: {str(e)}", ft.colors.RED))
+                self.page.run_thread(lambda: self.show_snackbar(f"Failed to start web UI: {str(e)}", ft.Colors.RED))
         
         threading.Thread(target=_start_web, daemon=True).start()
     
@@ -542,7 +542,7 @@ class S3AIFlutterApp:
                 self.page.run_thread(lambda: self.update_status("🔗 API running on http://localhost:8000", 100))
                 
             except Exception as e:
-                self.page.run_thread(lambda: self.show_snackbar(f"Failed to start API: {str(e)}", ft.colors.RED))
+                self.page.run_thread(lambda: self.show_snackbar(f"Failed to start API: {str(e)}", ft.Colors.RED))
         
         threading.Thread(target=_start_api, daemon=True).start()
     
@@ -623,7 +623,7 @@ class S3AIFlutterApp:
                     ft.Text("• Modern Flutter-style interface"),
                     ft.Text("• Vector semantic search"),
                     ft.Divider(),
-                    ft.Text("Built with Flet (Flutter for Python)", color=ft.colors.GREY_600)
+                    ft.Text("Built with Flet (Flutter for Python)", color=ft.Colors.GREY_600)
                 ], spacing=5),
                 width=400,
                 height=300

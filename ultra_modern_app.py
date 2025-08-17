@@ -766,13 +766,13 @@ class S3AIWebApp:
                         <span>Processing your query...</span>
                     </div>
                     
-                                         <div id="results" class="results-area">
+                     <div id="results" class="results-area">
                          <div style="color: var(--slate-500); font-style: italic; text-align: center; padding: 1.5rem;">
                              <div style="margin-bottom: 1rem;">Ready to process your enterprise queries...</div>
                              <div style="font-size: 0.7rem; color: var(--slate-400);">
                                  💡 <strong>Performance Tips:</strong><br>
                                  • First-time queries: 1-5 seconds<br>
-                                 • Repeated queries: <0.1 seconds (cached)<br>
+                                 • Repeated queries: &lt;0.1 seconds (cached)<br>
                                  • Upload docs → Build index for best results
                              </div>
                          </div>
@@ -783,14 +783,19 @@ class S3AIWebApp:
     </div>
     
     <script>
+        console.log('🔍 JavaScript loaded successfully');
         let queryCount = 0;
         let cacheHits = 0;
         
         async function executeQuery() {
+            console.log('🔍 executeQuery function called');
             const queryInput = document.getElementById('queryInput');
             const query = queryInput.value.trim();
             
+            console.log('🔍 Query:', query);
+            
             if (!query) {
+                console.log('❌ Empty query');
                 showAlert('Please enter a query', 'error');
                 return;
             }
@@ -826,9 +831,11 @@ class S3AIWebApp:
         }
         
         async function uploadFiles() {
+            console.log('📁 uploadFiles function called');
             setStatus('📁 Opening file dialog...');
             
             try {
+                console.log('📁 Calling pywebview.api.upload_files()');
                 const result = await pywebview.api.upload_files();
                 
                 if (result.success) {

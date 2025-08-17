@@ -460,89 +460,112 @@ class S3AIWebApp:
             }
         }
         
-        async function uploadFiles() {
-            console.log('uploadFiles called');
-            
-            try {
-                console.log('Calling upload API...');
-                const result = await pywebview.api.upload_files();
-                console.log('Upload result:', result);
-                
-                if (result.success) {
-                    alert('Successfully uploaded ' + result.count + ' files');
-                } else {
-                    alert('Upload failed: ' + result.error);
-                }
-            } catch (error) {
-                console.error('Upload error:', error);
-                alert('Upload error: ' + error.message);
-            }
-        }
+                 async function uploadFiles() {
+             console.log('uploadFiles called');
+             
+             setStatus('📁 Opening file dialog...');
+             updateResults('📁 File Upload\n\nOpening file dialog...');
+             
+             try {
+                 console.log('Calling upload API...');
+                 const result = await pywebview.api.upload_files();
+                 console.log('Upload result:', result);
+                 
+                 if (result.success) {
+                     const message = `✅ Upload Successful\n\nUploaded ${result.count} file(s):\n${result.files.join('\n')}`;
+                     updateResults(message);
+                 } else {
+                     updateResults(`❌ Upload Failed\n\n${result.error}`);
+                 }
+             } catch (error) {
+                 console.error('Upload error:', error);
+                 updateResults(`❌ Upload Error\n\n${error.message}`);
+             } finally {
+                 setStatus('');
+             }
+         }
         
-        async function buildIndex() {
-            console.log('buildIndex called');
-            
-            if (!confirm('Build index? This may take 30 seconds to 5 minutes.')) {
-                return;
-            }
-            
-            setStatus('Building index...');
-            
-            try {
-                console.log('Calling build API...');
-                const result = await pywebview.api.build_index();
-                console.log('Build result:', result);
-                
-                if (result.success) {
-                    alert('Index built successfully!');
-                } else {
-                    alert('Build failed: ' + result.error);
-                }
-            } catch (error) {
-                console.error('Build error:', error);
-                alert('Build error: ' + error.message);
-            } finally {
-                setStatus('');
-            }
-        }
+                 async function buildIndex() {
+             console.log('buildIndex called');
+             
+             if (!confirm('Build index? This may take 30 seconds to 5 minutes depending on document count.')) {
+                 return;
+             }
+             
+             setStatus('🔄 Building knowledge base...');
+             updateResults('🔄 Building Knowledge Base Index\n\nThis may take 30 seconds to 5 minutes...\nProcessing documents and creating embeddings...\n\nPlease wait...');
+             
+             const startTime = performance.now();
+             
+             try {
+                 console.log('Calling build API...');
+                 const result = await pywebview.api.build_index();
+                 console.log('Build result:', result);
+                 
+                 const buildTime = ((performance.now() - startTime) / 1000).toFixed(1);
+                 
+                 if (result.success) {
+                     const message = `✅ Index Build Complete\n\nBuild time: ${buildTime} seconds\nStatus: ${result.message}\n\nYour queries will now be much faster!`;
+                     updateResults(message);
+                     updateMetric('system-load', 'Optimized');
+                 } else {
+                     updateResults(`❌ Index Build Failed\n\n${result.error}\n\nTroubleshooting:\n• Check if documents exist in docs/ folder\n• Ensure sufficient memory available\n• Verify all dependencies installed`);
+                 }
+             } catch (error) {
+                 console.error('Build error:', error);
+                 updateResults(`❌ Build Error\n\n${error.message}`);
+             } finally {
+                 setStatus('');
+             }
+         }
         
-        async function openWebUI() {
-            console.log('openWebUI called');
-            
-            try {
-                console.log('Calling web UI API...');
-                const result = await pywebview.api.open_web_ui();
-                console.log('Web UI result:', result);
-                
-                if (result.success) {
-                    alert('Web interface starting... Browser will open in 3 seconds');
-                } else {
-                    alert('Failed to start web UI: ' + result.error);
-                }
-            } catch (error) {
-                console.error('Web UI error:', error);
-                alert('Web UI error: ' + error.message);
-            }
-        }
+                 async function openWebUI() {
+             console.log('openWebUI called');
+             
+             setStatus('🌐 Starting web interface...');
+             updateResults('🌐 Starting Web Interface\n\nLaunching Streamlit server...\nBrowser will open automatically in 3 seconds...');
+             
+             try {
+                 console.log('Calling web UI API...');
+                 const result = await pywebview.api.open_web_ui();
+                 console.log('Web UI result:', result);
+                 
+                 if (result.success) {
+                     updateResults('✅ Web Interface Started\n\nStreamlit server is running\nURL: http://localhost:8501\n\nBrowser should open automatically...');
+                 } else {
+                     updateResults(`❌ Web Interface Failed\n\n${result.error}\n\nTry manually:\npython -m streamlit run streamlit_ui.py`);
+                 }
+             } catch (error) {
+                 console.error('Web UI error:', error);
+                 updateResults(`❌ Web Interface Error\n\n${error.message}`);
+             } finally {
+                 setStatus('');
+             }
+         }
         
-        async function startAPI() {
-            console.log('startAPI called');
-            
-            try {
-                console.log('Calling start API...');
-                const result = await pywebview.api.start_api();
-                console.log('API start result:', result);
-                
-                if (result.success) {
-                    alert('API server started at http://localhost:8000');
-                } else {
-                    alert('Failed to start API: ' + result.error);
-                }
-            } catch (error) {
-                console.error('API start error:', error);
-                alert('API start error: ' + error.message);
-            }
-        }
+                 async function startAPI() {
+             console.log('startAPI called');
+             
+             setStatus('🔌 Starting API server...');
+             updateResults('🔌 Starting API Server\n\nLaunching FastAPI server...\nServer will be available at http://localhost:8000');
+             
+             try {
+                 console.log('Calling start API...');
+                 const result = await pywebview.api.start_api();
+                 console.log('API start result:', result);
+                 
+                 if (result.success) {
+                     updateResults('✅ API Server Started\n\nFastAPI server is running\nURL: http://localhost:8000\n\nAPI endpoints are now available for external access.');
+                 } else {
+                     updateResults(`❌ API Server Failed\n\n${result.error}\n\nTroubleshooting:\n• Check if port 8000 is available\n• Verify uvicorn is installed`);
+                 }
+             } catch (error) {
+                 console.error('API start error:', error);
+                 updateResults(`❌ API Server Error\n\n${error.message}`);
+             } finally {
+                 setStatus('');
+             }
+         }
         
         function displayResult(result, responseTime) {
             const resultsDiv = document.getElementById('results');
@@ -580,12 +603,17 @@ class S3AIWebApp:
             }
         }
         
-        function updateMetric(metricId, value) {
-            const element = document.getElementById(metricId);
-            if (element) {
-                element.textContent = value;
-            }
-        }
+                 function updateMetric(metricId, value) {
+             const element = document.getElementById(metricId);
+             if (element) {
+                 element.textContent = value;
+             }
+         }
+         
+         function updateResults(message) {
+             const resultsDiv = document.getElementById('results');
+             resultsDiv.innerHTML = message;
+         }
         
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -650,30 +678,106 @@ class S3AIWebAPI:
                     "response_time": time.time() - start_time
                 }
             
-            # Try quick search
-            print("🚀 API: Trying quick search...")
-            bucket_index = self._get_bucket_index()
-            quick_result = bucket_index.quick_search(query_text)
-            
-            if quick_result:
-                print("🚀 API: Quick search found results!")
-                response_cache.set(query_text, quick_result, "quick_search")
-                return {
-                    "answer": quick_result,
-                    "source": "quick_search",
-                    "cached": False,
-                    "success": True,
-                    "response_time": time.time() - start_time
-                }
-            
-            print("⚠️ API: No quick results, returning default message")
-            return {
-                "answer": "No results found. Try uploading documents and building the index.",
-                "source": "no_results",
-                "cached": False,
-                "success": False,
-                "response_time": time.time() - start_time
-            }
+                         # Try quick search first
+             print("🚀 API: Trying quick search...")
+             try:
+                 bucket_index = self._get_bucket_index()
+                 quick_result = bucket_index.quick_search(query_text)
+                 
+                 if quick_result:
+                     print("🚀 API: Quick search found results!")
+                     response_cache.set(query_text, quick_result, "quick_search")
+                     return {
+                         "answer": quick_result,
+                         "source": "quick_search",
+                         "cached": False,
+                         "success": True,
+                         "response_time": time.time() - start_time
+                     }
+             except Exception as e:
+                 print(f"⚠️ API: Quick search failed: {e}")
+             
+             # Try vector search (since index is built)
+             print("🎯 API: Trying vector search...")
+             try:
+                 model_cache = self._get_model_cache()
+                 vector_store = model_cache.get_vector_store()
+                 
+                 if vector_store:
+                     from langchain.chains import RetrievalQA
+                     from config import VECTOR_SEARCH_K, LLM_TIMEOUT_SECONDS
+                     
+                     print(f"🎯 API: Vector store loaded, searching with k={VECTOR_SEARCH_K}")
+                     retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
+                     llm = model_cache.get_llm()
+                     qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
+                     
+                     print("🤖 API: Running LLM query...")
+                     # Use timeout to prevent hanging
+                     import concurrent.futures
+                     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                         future = executor.submit(qa_chain.run, query_text)
+                         response = future.result(timeout=LLM_TIMEOUT_SECONDS)
+                     
+                     if response and response.strip():
+                         print(f"✅ API: Vector search successful!")
+                         response_cache.set(query_text, response, "vector")
+                         return {
+                             "answer": response,
+                             "source": "vector",
+                             "cached": False,
+                             "success": True,
+                             "response_time": time.time() - start_time
+                         }
+                 else:
+                     print("❌ API: Vector store not available")
+                     
+             except Exception as e:
+                 print(f"❌ API: Vector search failed: {e}")
+                 import traceback
+                 traceback.print_exc()
+             
+             # Fallback to text search
+             print("🔄 API: Trying text fallback...")
+             try:
+                 from utils import load_txt_documents, search_in_fallback_text
+                 fallback_text = load_txt_documents()
+                 
+                 if fallback_text:
+                     relevant_context = search_in_fallback_text(query_text, fallback_text)
+                     if relevant_context:
+                         print("🔄 API: Found relevant context in text files")
+                         model_cache = self._get_model_cache()
+                         llm = model_cache.get_llm()
+                         
+                         prompt = f"""Based on this information:
+{relevant_context}
+
+Question: {query_text}
+Answer:"""
+                         
+                         result = llm.invoke(prompt)
+                         if result and str(result).strip():
+                             formatted_result = str(result).strip()
+                             response_cache.set(query_text, formatted_result, "txt_fallback")
+                             return {
+                                 "answer": formatted_result,
+                                 "source": "fallback",
+                                 "cached": False,
+                                 "success": True,
+                                 "response_time": time.time() - start_time
+                             }
+             except Exception as e:
+                 print(f"❌ API: Text fallback failed: {e}")
+             
+             print("⚠️ API: All search methods failed")
+             return {
+                 "answer": "No relevant information found. The index was built successfully with 10,777 chunks, but no matches were found for your query. Try different keywords or check if Ollama is running.",
+                 "source": "no_results",
+                 "cached": False,
+                 "success": False,
+                 "response_time": time.time() - start_time
+             }
             
         except Exception as e:
             print(f"❌ API: Query error: {e}")

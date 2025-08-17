@@ -36,7 +36,7 @@ def create_spec_file():
 block_cipher = None
 
 a = Analysis(
-    ['modern_desktop_app.py'],
+    ['ultra_modern_app.py'],
     pathex=[],
     binaries=[],
     datas=[

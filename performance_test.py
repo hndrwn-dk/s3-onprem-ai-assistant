@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Performance Testing Script for S3 On-Premise AI Assistant
 Tests both desktop and web interfaces for speed optimization

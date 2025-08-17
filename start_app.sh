@@ -25,12 +25,12 @@ print_error() {
 }
 
 # Detect Python
-if command -v python3 &> /dev/null; then
-    PYTHON_CMD="python3"
-    print_status "Using python3"
-elif command -v python &> /dev/null; then
+if command -v python &> /dev/null; then
     PYTHON_CMD="python"
     print_status "Using python"
+elif command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+    print_status "Using python3"
 else
     print_error "Python not found. Please install Python 3.8+"
     exit 1
@@ -45,9 +45,9 @@ echo "🔍 Checking dependencies..."
 if $PYTHON_CMD -c "import webview" 2>/dev/null; then
     print_status "PyWebView available"
 else
-    print_error "PyWebView missing. Install with: pip3 install pywebview"
+    print_error "PyWebView missing. Install with: pip install pywebview"
     echo "Installing PyWebView..."
-    pip3 install --break-system-packages pywebview
+    pip install pywebview
 fi
 
 # Check if ultra_modern_app.py exists

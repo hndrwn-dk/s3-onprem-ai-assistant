@@ -13,35 +13,33 @@ The performance issues have been resolved. Both desktop and web interfaces are n
 
 ### **Option 2: Direct Start**
 ```bash
-# Use python3 (not python)
-python3 ultra_modern_app.py
+python ultra_modern_app.py
 ```
 
 ### **Option 3: Pre-warmed Start**
 ```bash
-python3 fast_start.py
+python fast_start.py
 ```
 
 ## 🌐 **Web Interface**
 
 ```bash
 # Start Streamlit web interface
-python3 -m streamlit run streamlit_ui.py
+python -m streamlit run streamlit_ui.py
 ```
 
 ## 🔧 **If You Get Errors:**
 
 ### **"python: command not found"**
-✅ **Solution**: Use `python3` instead of `python`
+✅ **Solution**: Install Python 3.8+ and ensure it's in PATH
 ```bash
-python3 ultra_modern_app.py
-python3 fast_start.py
+python --version  # Should show Python 3.x.x
 ```
 
 ### **"No module named 'webview'"**
 ✅ **Solution**: Install missing dependencies
 ```bash
-pip3 install --break-system-packages pywebview streamlit requests langchain-community
+pip install pywebview streamlit requests langchain-community
 ```
 
 ### **"Permission denied"**
@@ -54,7 +52,7 @@ chmod +x start_app.sh fast_start.py performance_test.py
 
 ```bash
 # Run diagnostic check
-python3 quick_test.py
+python quick_test.py
 ```
 
 This will show you exactly what's working and what needs to be fixed.
@@ -102,7 +100,7 @@ Try these in the desktop app:
 
 ## 🚨 **Important Notes**
 
-1. **Use `python3`** not `python`
+1. **Python 3.8+** required (your system: Python 3.11.9 ✅)
 2. **Desktop app is fastest** (native performance)
 3. **Web interface matches** desktop design exactly
 4. **First query may be slow** (1-5s), repeat queries are instant
@@ -127,7 +125,7 @@ The apps are now working correctly with enterprise-grade performance. Try:
 
 Or for web interface:
 ```bash
-python3 -m streamlit run streamlit_ui.py
+python -m streamlit run streamlit_ui.py
 ```
 
 **No more 30+ second waits!** 🚀

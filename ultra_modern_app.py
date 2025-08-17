@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Enterprise-Grade Desktop AI Assistant
 Professional S3 Analytics Platform with Modern UI/UX

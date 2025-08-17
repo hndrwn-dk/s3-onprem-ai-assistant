@@ -1043,11 +1043,11 @@ class S3AIWebAPI:
         return self._bucket_index
     
     def query(self, query_text):
-        """Handle query execution with optimized performance"""
+        """Handle query execution with optimized performance - matches Streamlit UI approach"""
         start_time = time.time()
         
         try:
-            # Step 1: Check cache first (fastest)
+            # Step 1: Check cache first (fastest - <0.1s)
             response_cache = self._get_response_cache()
             cached_response = response_cache.get(query_text)
             
@@ -1060,13 +1060,52 @@ class S3AIWebAPI:
                     "response_time": time.time() - start_time
                 }
             
-            # Step 2: Try quick bucket search (fast)
+            # Step 2: Try quick bucket search (fast - 0.1-1s)
             bucket_index = self._get_bucket_index()
             quick_result = bucket_index.quick_search(query_text)
             
             if quick_result:
-                # Cache the quick result
-                response_cache.set(query_text, quick_result, "quick_search")
+                # Check if AI formatting is needed
+                try:
+                    model_cache = self._get_model_cache()
+                    llm = model_cache.get_llm()
+                    
+                    # Simple prompt for quick formatting
+                    prompt = f"""Based on this bucket information:
+{quick_result}
+
+Question: {query_text}
+Provide a clear, concise answer:"""
+                    
+                    # Quick LLM call with timeout
+                    import concurrent.futures
+                    from config import LLM_TIMEOUT_SECONDS
+                    
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                        future = executor.submit(llm.invoke, prompt)
+                        try:
+                            ai_answer = future.result(timeout=min(LLM_TIMEOUT_SECONDS, 10))  # Max 10s for quick queries
+                            if ai_answer and str(ai_answer).strip():
+                                formatted_answer = str(ai_answer).strip()
+                                response_cache.set(query_text, formatted_answer, "quick_search_ai")
+                                
+                                return {
+                                    "answer": formatted_answer,
+                                    "source": "quick_search",
+                                    "cached": False,
+                                    "success": True,
+                                    "response_time": time.time() - start_time
+                                }
+                        except concurrent.futures.TimeoutError:
+                            # If AI formatting times out, return raw results
+                            pass
+                
+                except Exception:
+                    # If AI formatting fails, return raw results
+                    pass
+                
+                # Cache and return raw quick result
+                response_cache.set(query_text, quick_result, "quick_search_raw")
                 
                 return {
                     "answer": quick_result,
@@ -1076,7 +1115,7 @@ class S3AIWebAPI:
                     "response_time": time.time() - start_time
                 }
             
-            # Step 3: Vector search (slower but comprehensive)
+            # Step 3: Vector search (slower but comprehensive - 1-5s)
             try:
                 model_cache = self._get_model_cache()
                 vector_store = model_cache.get_vector_store()
@@ -1106,11 +1145,13 @@ class S3AIWebAPI:
                             "success": True,
                             "response_time": time.time() - start_time
                         }
+                else:
+                    raise ValueError("Vector store not available")
                 
             except Exception as vector_error:
                 print(f"Vector search failed: {vector_error}")
             
-            # Step 4: Fallback to text search
+            # Step 4: Fallback to text search (2-10s)
             try:
                 from utils import load_txt_documents, search_in_fallback_text
                 fallback_text = load_txt_documents()
@@ -1127,13 +1168,29 @@ class S3AIWebAPI:
 Question: {query_text}
 Answer:"""
                         
-                        result = llm(prompt)
-                        if result:
+                        # Use invoke method with timeout
+                        import concurrent.futures
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                            future = executor.submit(llm.invoke, prompt)
+                            result = future.result(timeout=15)  # 15s timeout for fallback
+                        
+                        if result and str(result).strip():
+                            formatted_result = str(result).strip()
                             # Cache the fallback result
-                            response_cache.set(query_text, result, "txt_fallback")
+                            response_cache.set(query_text, formatted_result, "txt_fallback")
                             
                             return {
-                                "answer": result,
+                                "answer": formatted_result,
+                                "source": "fallback",
+                                "cached": False,
+                                "success": True,
+                                "response_time": time.time() - start_time
+                            }
+                        else:
+                            # Return raw context if LLM fails
+                            response_cache.set(query_text, relevant_context, "txt_raw")
+                            return {
+                                "answer": f"Raw search results:\n\n{relevant_context}",
                                 "source": "fallback",
                                 "cached": False,
                                 "success": True,
@@ -1145,7 +1202,7 @@ Answer:"""
             
             # If all methods fail
             return {
-                "answer": "No relevant information found for your query. Please try:\n• Adding more documents to the knowledge base\n• Rebuilding the index\n• Using different keywords",
+                "answer": "No relevant information found for your query.\n\nTroubleshooting:\n• Upload documents to docs/ folder\n• Build the knowledge base index\n• Try different keywords\n• Check that Ollama is running",
                 "source": "no_results",
                 "cached": False,
                 "success": False,
@@ -1153,8 +1210,12 @@ Answer:"""
             }
                 
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Query error: {error_details}")
+            
             return {
-                "answer": f"Error processing query: {str(e)}",
+                "answer": f"System error occurred:\n{str(e)}\n\nPlease check:\n• Ollama is running\n• Models are available\n• Dependencies are installed",
                 "source": "error",
                 "cached": False,
                 "success": False,

@@ -50,13 +50,14 @@ a = Analysis(
         ('utils.py', '.'),
         ('build_embeddings_all.py', '.'),
         ('validation.py', '.'),
+        ('desktop_app.py', '.'),
         ('requirements.txt', '.'),
         ('README.md', '.'),
         ('LICENSE', '.'),
-        ('docs', 'docs'),
-        ('cache', 'cache'),
-        ('documentation', 'documentation'),
-    ],
+    ] + ([('docs', 'docs')] if os.path.exists('docs') else []) + 
+    ([('cache', 'cache')] if os.path.exists('cache') else []) + 
+    ([('documentation', 'documentation')] if os.path.exists('documentation') else []) +
+    ([('s3_all_docs', 's3_all_docs')] if os.path.exists('s3_all_docs') else []),
     hiddenimports=[
         'customtkinter',
         'tkinter',
@@ -173,16 +174,104 @@ def create_portable_package():
     
     # Create startup script
     startup_script = f"""@echo off
-echo Starting S3 AI Assistant v{VERSION}
+title S3 AI Assistant v{VERSION}
 echo.
-echo Make sure Ollama is running before using AI features!
+echo ========================================
+echo   S3 AI Assistant v{VERSION}
+echo ========================================
 echo.
+echo Prerequisites:
+echo 1. Ollama must be installed and running
+echo 2. At least one model downloaded (e.g., phi3:mini)
+echo.
+echo Quick setup:
+echo   ollama pull phi3:mini
+echo.
+echo Starting application...
+echo.
+
+cd /d "%~dp0"
 S3AIAssistant.exe
-pause
+
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo ========================================
+    echo Application encountered an error!
+    echo ========================================
+    echo.
+    echo Troubleshooting:
+    echo 1. Make sure Ollama is installed and running
+    echo 2. Check that you have a model: ollama list
+    echo 3. Try: ollama pull phi3:mini
+    echo.
+    pause
+) else (
+    echo.
+    echo Application closed normally.
+)
 """
     
     with open(f'{release_dir}/START_HERE.bat', 'w', encoding='utf-8') as f:
         f.write(startup_script)
+    
+    # Create a simple README for users
+    user_readme = f"""# S3 AI Assistant v{VERSION}
+
+## Quick Start
+
+1. **Install Ollama** (if not already installed):
+   - Download from: https://ollama.ai
+   - Install and make sure it's running
+
+2. **Download a model**:
+   ```
+   ollama pull phi3:mini
+   ```
+
+3. **Run the application**:
+   - Double-click `START_HERE.bat` 
+   - Or run `S3AIAssistant.exe` directly
+
+## First Use
+
+1. Click "📁 Add Documents" to upload your PDFs/TXT files
+2. Click "🏗️ Build Index" to process your documents
+3. Ask questions in natural language
+4. Get AI-powered answers!
+
+## Troubleshooting
+
+### "Missing files" error:
+- Make sure you extracted the entire ZIP file
+- Run from the extracted folder, not from inside the ZIP
+
+### "No response" from AI:
+- Check Ollama is running: `ollama ps`
+- Make sure you have a model: `ollama list`
+- Try: `ollama pull phi3:mini`
+
+### Application won't start:
+- Try running `S3AIAssistant.exe` directly
+- Check Windows Defender hasn't blocked the file
+- Make sure you have admin rights if needed
+
+## Features
+
+- 🖥️ Modern desktop interface
+- 🤖 AI-powered document search
+- 📁 Multiple document formats (PDF, TXT, MD, JSON)
+- 🌐 Web interface available
+- 🔗 REST API included
+- ⚙️ Customizable settings
+
+## Support
+
+For issues or questions, visit:
+https://github.com/your-repo/s3-ai-assistant/issues
+"""
+    
+    with open(f'{release_dir}/README.txt', 'w', encoding='utf-8') as f:
+        f.write(user_readme)
     
     # Create ZIP package
     zip_name = f"{release_dir}-Windows.zip"

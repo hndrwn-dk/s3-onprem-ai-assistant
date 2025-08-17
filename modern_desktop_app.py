@@ -241,12 +241,17 @@ Ready to get started? Add your documents and start asking questions!"""
             'requirements.txt', 'build_embeddings_all.py'
         ]
         
+        # Check in current directory or PyInstaller bundle
+        base_dir = getattr(sys, '_MEIPASS', os.getcwd())
         missing_files = []
+        
         for file in required_files:
-            if not os.path.exists(file):
+            file_path = os.path.join(base_dir, file)
+            if not os.path.exists(file_path) and not os.path.exists(file):
                 missing_files.append(file)
         
-        if missing_files:
+        if missing_files and not getattr(sys, 'frozen', False):
+            # Only show warning if not running as executable
             messagebox.showwarning(
                 "Missing Files",
                 f"Some required files are missing:\\n{', '.join(missing_files)}\\n\\n"
@@ -282,12 +287,22 @@ Ready to get started? Add your documents and start asking questions!"""
         try:
             self.root.after(0, lambda: self.update_status("🔍 Searching documents...", 0.3))
             
-            # Use the CLI backend
+            # Check if running as executable or from source
+            if getattr(sys, 'frozen', False):
+                # Running as PyInstaller executable
+                app_dir = sys._MEIPASS
+                s3ai_script = os.path.join(app_dir, 's3ai_query.py')
+                cmd = [sys.executable, s3ai_script, question]
+            else:
+                # Running from source
+                cmd = [sys.executable, 's3ai_query.py', question]
+            
             result = subprocess.run(
-                [sys.executable, 's3ai_query.py', question],
+                cmd,
                 capture_output=True,
                 text=True,
-                timeout=300  # 5 minute timeout
+                timeout=300,  # 5 minute timeout
+                cwd=getattr(sys, '_MEIPASS', os.getcwd())  # Set working directory
             )
             
             # Update UI in main thread
@@ -388,11 +403,22 @@ Ready to get started? Add your documents and start asking questions!"""
                 try:
                     self.root.after(0, lambda: self.update_status("📚 Processing documents...", 0.3))
                     
+                    # Check if running as executable or from source
+                    if getattr(sys, 'frozen', False):
+                        # Running as PyInstaller executable
+                        app_dir = sys._MEIPASS
+                        build_script = os.path.join(app_dir, 'build_embeddings_all.py')
+                        cmd = [sys.executable, build_script]
+                    else:
+                        # Running from source
+                        cmd = [sys.executable, 'build_embeddings_all.py']
+                    
                     result = subprocess.run(
-                        [sys.executable, 'build_embeddings_all.py'],
+                        cmd,
                         capture_output=True,
                         text=True,
-                        timeout=1800  # 30 minute timeout
+                        timeout=1800,  # 30 minute timeout
+                        cwd=getattr(sys, '_MEIPASS', os.getcwd())  # Set working directory
                     )
                     
                     self.root.after(0, self._update_build_results, result.stdout, result.stderr, result.returncode)

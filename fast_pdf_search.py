@@ -11,7 +11,7 @@ from pathlib import Path
 
 def search_pdfs_directly(query, max_results=5):
     """Search PDFs directly without vector loading"""
-    print(f"🔍 Fast PDF Search for: '{query}'")
+    print(f"Fast PDF Search for: '{query}'")
     print("-" * 50)
     
     start_time = time.time()
@@ -19,14 +19,14 @@ def search_pdfs_directly(query, max_results=5):
     
     docs_path = Path("docs")
     if not docs_path.exists():
-        return "❌ docs/ folder not found"
+        return "docs/ folder not found"
     
     # Search PDF files
     pdf_files = list(docs_path.glob("*.pdf"))
-    print(f"📄 Searching {len(pdf_files)} PDF files...")
+    print(f"Searching {len(pdf_files)} PDF files...")
     
     for pdf_file in pdf_files:
-        print(f"📖 Checking: {pdf_file.name}")
+        print(f"Checking: {pdf_file.name}")
         try:
             # Try PyPDF2 first
             try:
@@ -56,7 +56,7 @@ def search_pdfs_directly(query, max_results=5):
                                 break
             
             except ImportError:
-                print("  ⚠️ PyPDF2 not available, trying pypdf...")
+                print("  PyPDF2 not available, trying pypdf...")
                 import pypdf
                 with open(pdf_file, 'rb') as f:
                     reader = pypdf.PdfReader(f)
@@ -81,19 +81,19 @@ def search_pdfs_directly(query, max_results=5):
                                 break
         
         except Exception as e:
-            print(f"  ❌ Error reading {pdf_file.name}: {e}")
+            print(f"  Error reading {pdf_file.name}: {e}")
     
     search_time = time.time() - start_time
     
     if not results:
-        return f"❌ No matches found for '{query}' in {len(pdf_files)} PDF files (searched in {search_time:.2f}s)"
+        return f"No matches found for '{query}' in {len(pdf_files)} PDF files (searched in {search_time:.2f}s)"
     
     # Sort by relevance
     results.sort(key=lambda x: x['relevance'], reverse=True)
     
     # Format response
     response_parts = [
-        f"✅ Found {len(results)} matches for '{query}' in your vendor documentation:",
+        f"Found {len(results)} matches for '{query}' in your vendor documentation:",
         f"🕒 Search completed in {search_time:.2f} seconds",
         ""
     ]
@@ -108,7 +108,7 @@ def search_pdfs_directly(query, max_results=5):
 
 def search_text_files(query):
     """Search text files directly"""
-    print(f"🔍 Searching text files for: '{query}'")
+    print(f"Searching text files for: '{query}'")
     
     docs_path = Path("docs")
     txt_files = list(docs_path.glob("*.txt")) + list(docs_path.glob("*.md"))
@@ -131,16 +131,16 @@ def search_text_files(query):
                         'relevance': content.lower().count(query.lower())
                     })
         except Exception as e:
-            print(f"⚠️ Error reading {txt_file.name}: {e}")
+            print(f"Error reading {txt_file.name}: {e}")
     
     return results
 
 def main():
     query = sys.argv[1] if len(sys.argv) > 1 else "bucketops"
     
-    print("🏢 S3 On-Premise AI Assistant - Fast PDF Search")
+    print("S3 On-Premise AI Assistant - Fast PDF Search")
     print("=" * 60)
-    print("🎯 This searches your ACTUAL vendor documentation")
+    print("This searches your ACTUAL vendor documentation")
     print("⚡ No vector loading delays - instant results")
     print()
     
@@ -149,14 +149,14 @@ def main():
     print(pdf_results)
     
     # Search text files
-    print("\n📄 Checking text files...")
+    print("\nChecking text files...")
     txt_results = search_text_files(query)
     if txt_results:
-        print(f"✅ Found {len(txt_results)} matches in text files")
+        print(f"Found {len(txt_results)} matches in text files")
         for result in txt_results:
             print(f"  • {result['file']}: {result['context'][:100]}...")
     else:
-        print("❌ No matches in text files")
+        print("No matches in text files")
 
 if __name__ == "__main__":
     main()

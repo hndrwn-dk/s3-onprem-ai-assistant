@@ -11,7 +11,7 @@ from pathlib import Path
 
 def main_query(query):
     """Fast PDF search + AI formatting for human readability"""
-    print(f"🔍 Smart Search for: '{query}'")
+    print(f"Smart Search for: '{query}'")
     print("-" * 50)
     
     start_time = time.time()
@@ -24,11 +24,11 @@ def main_query(query):
         if "No matches found" in pdf_results:
             return pdf_results
         
-        print("✅ Found vendor documentation content")
+        print("Found vendor documentation content")
         search_time = time.time() - start_time
         
         # Step 2: Use AI to make it human readable (but ONLY from retrieved content)
-        print("🤖 Formatting with AI (using ONLY retrieved vendor docs)...")
+        print("Formatting with AI (using ONLY retrieved vendor docs)...")
         
         try:
             from model_cache import ModelCache
@@ -59,26 +59,26 @@ FORMATTED RESPONSE BASED ONLY ON PROVIDED VENDOR DOCS:"""
             if response and str(response).strip():
                 total_time = time.time() - start_time
                 
-                formatted_response = f"""🎯 Smart Search Results for '{query}'
-📚 Source: Your actual vendor documentation
-🕒 Total time: {total_time:.2f}s (Search: {search_time:.2f}s + AI formatting: {ai_time:.2f}s)
+                formatted_response = f"""Smart Search Results for '{query}'
+Source: Your actual vendor documentation
+Total time: {total_time:.2f}s (Search: {search_time:.2f}s + AI formatting: {ai_time:.2f}s)
 
 {str(response).strip()}
 
 ---
-📋 Raw vendor documentation sources:
+Raw vendor documentation sources:
 {pdf_results}"""
                 
                 return formatted_response
             else:
-                return f"❌ AI formatting failed. Raw results:\n\n{pdf_results}"
+                return f"AI formatting failed. Raw results:\n\n{pdf_results}"
         
         except Exception as ai_error:
-            print(f"⚠️ AI formatting failed: {ai_error}")
-            return f"⚠️ AI formatting failed, showing raw results:\n\n{pdf_results}"
+            print(f"AI formatting failed: {ai_error}")
+            return f"AI formatting failed, showing raw results:\n\n{pdf_results}"
     
     except Exception as e:
-        return f"❌ Smart search failed: {e}"
+        return f"Smart search failed: {e}"
 
 def main():
     if len(sys.argv) < 2:
@@ -89,10 +89,10 @@ def main():
     
     query = " ".join(sys.argv[1:])
     
-    print("🏢 S3 On-Premise AI Assistant")
+    print("S3 On-Premise AI Assistant")
     print("=" * 50)
-    print("🎯 Searching your actual vendor documentation")
-    print("✅ Fast PDF search + AI formatting")
+    print("Searching your actual vendor documentation")
+    print("Fast PDF search + AI formatting")
     print()
     
     result = main_query(query)

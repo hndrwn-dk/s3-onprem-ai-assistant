@@ -678,9 +678,9 @@ class S3AIWebAPI:
                     "response_time": time.time() - start_time
                 }
             
-                         # Try quick search first
-             print("🚀 API: Trying quick search...")
-             try:
+            # Try quick search first
+            print("🚀 API: Trying quick search...")
+            try:
                  bucket_index = self._get_bucket_index()
                  quick_result = bucket_index.quick_search(query_text)
                  

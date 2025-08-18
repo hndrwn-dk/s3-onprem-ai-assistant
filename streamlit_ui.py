@@ -508,7 +508,7 @@ Answer:"""
                         
                         def load_vector_store():
                             return ModelCache.get_vector_store()
-                    
+                        
                         # Try to load vector store with 30 second timeout
                         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                             future = executor.submit(load_vector_store)
@@ -516,36 +516,35 @@ Answer:"""
                                 vector_store = future.result(timeout=30)  # 30 second timeout
                             except concurrent.futures.TimeoutError:
                                 raise TimeoutError("Vector store loading timed out after 30 seconds. Index may be too large.")
-                    
+                        
                         retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
                         llm = ModelCache.get_llm()
                         qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
-                    
-                    progress_bar.progress(80)
-                    status_text.markdown("🤖 **AI processing...**")
-                    import concurrent.futures
-                    from config import LLM_TIMEOUT_SECONDS
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                        fut = ex.submit(qa_chain.run, query)
-                        response = fut.result(timeout=LLM_TIMEOUT_SECONDS)
-                    
-                    if response and response.strip():
-                        progress_bar.progress(100)
-                        status_text.empty()
-                        rt = time.time() - start_time
                         
-                        st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
-                        st.markdown(f'<div class="status-indicator status-success">🎯 Vector Search • {rt:.2f}s</div>', unsafe_allow_html=True)
-                        st.markdown("---")
-                        st.markdown(response)
-                        st.markdown('</div>', unsafe_allow_html=True)
+                        progress_bar.progress(80)
+                        status_text.markdown("🤖 **AI processing...**")
+                        from config import LLM_TIMEOUT_SECONDS
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                            fut = ex.submit(qa_chain.run, query)
+                            response = fut.result(timeout=LLM_TIMEOUT_SECONDS)
                         
-                        response_cache.set(query, response, "vector")
-                        with st.expander("📊 Performance Details"):
-                            st.markdown("**Source:** Vector search")
-                            st.markdown(f"**Response time:** {rt:.2f} seconds")
-                    else:
-                        raise ValueError("Empty response from vector search")
+                        if response and response.strip():
+                            progress_bar.progress(100)
+                            status_text.empty()
+                            rt = time.time() - start_time
+                            
+                            st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+                            st.markdown(f'<div class="status-indicator status-success">🎯 Vector Search • {rt:.2f}s</div>', unsafe_allow_html=True)
+                            st.markdown("---")
+                            st.markdown(response)
+                            st.markdown('</div>', unsafe_allow_html=True)
+                            
+                            response_cache.set(query, response, "vector")
+                            with st.expander("📊 Performance Details"):
+                                st.markdown("**Source:** Vector search")
+                                st.markdown(f"**Response time:** {rt:.2f} seconds")
+                        else:
+                            raise ValueError("Empty response from vector search")
                         
                 except Exception as e:
                     if "timed out" in str(e).lower():

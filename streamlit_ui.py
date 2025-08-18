@@ -335,10 +335,12 @@ col1, col2, col3 = st.columns([2, 1, 1])
 with col1:
     submit = st.button("🔍 Execute Query", type="primary", use_container_width=True)
 with col2:
-    clear_cache = st.button("🗑️ Clear Cache", use_container_width=True)
+    fast_search = st.button("⚡ Fast Search", use_container_width=True, help="Skip vector search for instant results")
 with col3:
-    # AI formatting toggle (simplified)
-    st.session_state.use_ai_format = st.checkbox("🤖 AI Format", value=False)
+    clear_cache = st.button("🗑️ Clear Cache", use_container_width=True)
+
+# Fast search option
+st.session_state.use_fast_search = st.checkbox("⚡ Skip vector search (faster but less comprehensive)", value=False, help="Use text-based search only - much faster but may miss some results")
 
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -387,7 +389,7 @@ if 'query_history' not in st.session_state:
     st.session_state.query_history = []
 
 # Query Processing
-if submit and query:
+if (submit or fast_search) and query:
     start_time = time.time()
     st.session_state.query_history.append(query)
 
@@ -469,14 +471,55 @@ Answer:"""
                     st.markdown('</div>', unsafe_allow_html=True)
                     logger.error(f"LLM error in quick search: {e}")
             else:
-                # Vector search
-                progress_bar.progress(50)
-                status_text.markdown("🔍 **Performing vector search...**")
-                try:
-                    vector_store = ModelCache.get_vector_store()
-                    retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
-                    llm = ModelCache.get_llm()
-                    qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
+                # Check if fast search is enabled or requested
+                use_fast_search = st.session_state.get("use_fast_search", False) or fast_search
+                
+                if use_fast_search:
+                    # Skip vector search, go directly to text fallback
+                    progress_bar.progress(90)
+                    status_text.markdown("⚡ **Fast text search...**")
+                    fallback_text = load_txt_documents()
+                    
+                    if fallback_text:
+                        relevant_context = search_in_fallback_text(query, fallback_text)
+                        if relevant_context:
+                            progress_bar.progress(100)
+                            status_text.empty()
+                            rt = time.time() - start_time
+                            
+                            st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+                            st.markdown(f'<div class="status-indicator status-info">⚡ Fast Search • {rt:.2f}s</div>', unsafe_allow_html=True)
+                            st.markdown("---")
+                            st.markdown(relevant_context)
+                            st.markdown('</div>', unsafe_allow_html=True)
+                            
+                            response_cache.set(query, relevant_context, "fast_search")
+                        else:
+                            st.error(f"❌ No Results Found ({time.time() - start_time:.2f}s)")
+                    else:
+                        st.error(f"❌ No Data Available ({time.time() - start_time:.2f}s)")
+                else:
+                    # Vector search with timeout
+                    progress_bar.progress(50)
+                    status_text.markdown("🔍 **Performing vector search...**")
+                    try:
+                        # Add timeout to prevent hanging in Streamlit
+                        import concurrent.futures
+                        
+                        def load_vector_store():
+                            return ModelCache.get_vector_store()
+                    
+                        # Try to load vector store with 30 second timeout
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                            future = executor.submit(load_vector_store)
+                            try:
+                                vector_store = future.result(timeout=30)  # 30 second timeout
+                            except concurrent.futures.TimeoutError:
+                                raise TimeoutError("Vector store loading timed out after 30 seconds. Index may be too large.")
+                    
+                        retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
+                        llm = ModelCache.get_llm()
+                        qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
                     
                     progress_bar.progress(80)
                     status_text.markdown("🤖 **AI processing...**")
@@ -505,7 +548,12 @@ Answer:"""
                         raise ValueError("Empty response from vector search")
                         
                 except Exception as e:
-                    logger.warning(f"Vector search failed: {e}")
+                    if "timed out" in str(e).lower():
+                        logger.warning(f"Vector search timed out: {e}")
+                        st.warning("⚠️ Vector search is taking too long (>30s). Using faster text search instead.")
+                    else:
+                        logger.warning(f"Vector search failed: {e}")
+                    
                     # Fallback search
                     progress_bar.progress(90)
                     status_text.markdown("🔄 **Fallback search...**")

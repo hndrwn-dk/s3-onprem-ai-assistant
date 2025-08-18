@@ -185,7 +185,7 @@ Answer:"""
                         src = doc.metadata.get("source", "unknown")
                         filename = src.split('\\')[-1].split('/')[-1]
                         content = smart_format_text(doc.page_content, max_length=600)
-                        snippets.append(f"📄 Document {i}: {filename}\n{'-' * 60}\n{content}...\n")
+                        snippets.append(f" Document {i}: {filename}\n{'-' * 60}\n{content}...\n")
                     
                     result = "\n".join(snippets)
                     response_cache.set(question, result, "vector_snippets_fallback")

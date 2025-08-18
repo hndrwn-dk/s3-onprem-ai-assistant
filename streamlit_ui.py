@@ -13,7 +13,7 @@ from config import VECTOR_SEARCH_K, RECENT_QUESTIONS_FILE, DOCS_PATH
 # Enterprise page configuration
 st.set_page_config(
     page_title="S3 On-Premise AI Assistant",
-    page_icon="🏢",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -257,7 +257,7 @@ st.markdown(
 st.markdown(
     """
     <div class="main-header">
-        <h1>🏢 S3 On-Premise AI Assistant</h1>
+        <h1> S3 On-Premise AI Assistant</h1>
         <p class="subtitle">Fully offline-capable AI assistant for answering operational, admin, and troubleshooting questions for on-premises S3-compatible platforms</p>
     </div>
     """,
@@ -266,7 +266,7 @@ st.markdown(
 
 # Compact Performance Dashboard
 st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
-st.markdown("### 📊 System Performance")
+st.markdown("###  System Performance")
 
 perf = ModelCache.get_load_times()
 col1, col2, col3, col4 = st.columns(4)
@@ -275,7 +275,7 @@ with col1:
     st.markdown(
         f"""
         <div class="metric-card">
-            <div class="metric-label">🚀 LLM Response</div>
+            <div class="metric-label"> LLM Response</div>
             <div class="metric-value">{perf.get('llm', 0):.2f}s</div>
         </div>
         """,
@@ -287,7 +287,7 @@ with col2:
     st.markdown(
         f"""
         <div class="metric-card">
-            <div class="metric-label">🔍 Vector Search</div>
+            <div class="metric-label"> Vector Search</div>
             <div class="metric-value">{'%.2fs' % vs if vs else 'N/A'}</div>
         </div>
         """,
@@ -300,7 +300,7 @@ with col3:
     st.markdown(
         f"""
         <div class="metric-card">
-            <div class="metric-label">💾 Cache Hit Rate</div>
+            <div class="metric-label"> Cache Hit Rate</div>
             <div class="metric-value">{hit_rate:.1%}</div>
         </div>
         """,
@@ -311,7 +311,7 @@ with col4:
     st.markdown(
         f"""
         <div class="metric-card">
-            <div class="metric-label">📈 Status</div>
+            <div class="metric-label"> Status</div>
             <div class="metric-value">Online</div>
         </div>
         """,
@@ -322,25 +322,25 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 # Compact Query Interface
 st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
-st.markdown("### 💬 Query Interface")
+st.markdown("###  Query Interface")
 
 query = st.text_input(
     "",
-    placeholder="🔍 Enter your query (e.g., 'Show all buckets for engineering department')",
+    placeholder=" Enter your query (e.g., 'Show all buckets for engineering department')",
     key="query_input",
     label_visibility="collapsed"
 )
 
 col1, col2, col3 = st.columns([2, 1, 1])
 with col1:
-    submit = st.button("🔍 Execute Query", type="primary", use_container_width=True)
+    submit = st.button(" Execute Query", type="primary", use_container_width=True)
 with col2:
-    fast_search = st.button("⚡ Fast Search", use_container_width=True, help="Skip vector search for instant results")
+    fast_search = st.button(" Fast Search", use_container_width=True, help="Skip vector search for instant results")
 with col3:
-    clear_cache = st.button("🗑️ Clear Cache", use_container_width=True)
+    clear_cache = st.button(" Clear Cache", use_container_width=True)
 
 # Fast search option
-st.session_state.use_fast_search = st.checkbox("⚡ Skip vector search (faster but less comprehensive)", value=False, help="Use text-based search only - much faster but may miss some results")
+st.session_state.use_fast_search = st.checkbox(" Skip vector search (faster but less comprehensive)", value=False, help="Use text-based search only - much faster but may miss some results")
 
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -365,24 +365,24 @@ with st.expander("📁 Data Management", expanded=False):
                     with open(save_path, "wb") as f:
                         f.write(uf.getbuffer())
                     saved.append(save_path)
-                st.success(f"✅ Successfully uploaded {len(saved)} file(s)")
+                st.success(f" Successfully uploaded {len(saved)} file(s)")
     
     with col2:
-        if st.button("🔄 Rebuild Index", use_container_width=True):
+        if st.button(" Rebuild Index", use_container_width=True):
             with st.spinner("Rebuilding knowledge base..."):
                 try:
                     from build_embeddings_all import build_vector_index
                     build_vector_index()
                     ModelCache.reset_vector_store()
                     ModelCache.get_vector_store()
-                    st.success("✅ Knowledge base successfully updated")
+                    st.success(" Knowledge base successfully updated")
                 except Exception as e:
-                    st.error(f"❌ Index rebuild failed: {e}")
+                    st.error(f" Index rebuild failed: {e}")
 
 # Clear cache functionality
 if clear_cache:
     response_cache.clear_expired()
-    st.success("✅ Cache cleared successfully")
+    st.success(" Cache cleared successfully")
 
 # Initialize query history
 if 'query_history' not in st.session_state:
@@ -402,7 +402,7 @@ if (submit or fast_search) and query:
     try:
         # Cache check
         progress_bar.progress(10)
-        status_text.markdown("🔍 **Checking cache...**")
+        status_text.markdown(" **Checking cache...**")
         cached_response = response_cache.get(query)
         
         if cached_response:
@@ -411,23 +411,23 @@ if (submit or fast_search) and query:
             rt = time.time() - start_time
             
             st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
-            st.markdown(f'<div class="status-indicator status-success">⚡ Cached Result • {rt:.2f}s</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="status-indicator status-success"> Cached Result • {rt:.2f}s</div>', unsafe_allow_html=True)
             st.markdown("---")
             st.markdown(cached_response)
             st.markdown('</div>', unsafe_allow_html=True)
             
-            with st.expander("📊 Performance Details"):
+            with st.expander(" Performance Details"):
                 st.markdown("**Source:** Cache hit")
                 st.markdown(f"**Response time:** {rt:.2f} seconds")
         else:
             # Quick search
             progress_bar.progress(30)
-            status_text.markdown("🔍 **Performing quick bucket search...**")
+            status_text.markdown(" **Performing quick bucket search...**")
             quick_result = bucket_index.quick_search(query)
             
             if quick_result:
                 progress_bar.progress(60)
-                status_text.markdown("🤖 **Processing with AI...**")
+                status_text.markdown(" **Processing with AI...**")
                 llm = ModelCache.get_llm()
                 prompt = f"""Based on this bucket information:
 {quick_result}
@@ -450,7 +450,7 @@ Answer:"""
                     rt = time.time() - start_time
                     
                     st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
-                    st.markdown(f'<div class="status-indicator status-info">🚀 Quick Search • {rt:.2f}s</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="status-indicator status-info"> Quick Search • {rt:.2f}s</div>', unsafe_allow_html=True)
                     st.markdown("---")
                     st.markdown(answer)
                     st.markdown('</div>', unsafe_allow_html=True)
@@ -477,7 +477,7 @@ Answer:"""
                 if use_fast_search:
                     # Skip vector search, go directly to text fallback
                     progress_bar.progress(90)
-                    status_text.markdown("⚡ **Fast text search...**")
+                    status_text.markdown(" **Fast text search...**")
                     fallback_text = load_txt_documents()
                     
                     if fallback_text:
@@ -488,20 +488,20 @@ Answer:"""
                             rt = time.time() - start_time
                             
                             st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
-                            st.markdown(f'<div class="status-indicator status-info">⚡ Fast Search • {rt:.2f}s</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="status-indicator status-info"> Fast Search • {rt:.2f}s</div>', unsafe_allow_html=True)
                             st.markdown("---")
                             st.markdown(relevant_context)
                             st.markdown('</div>', unsafe_allow_html=True)
                             
                             response_cache.set(query, relevant_context, "fast_search")
                         else:
-                            st.error(f"❌ No Results Found ({time.time() - start_time:.2f}s)")
+                            st.error(f" No Results Found ({time.time() - start_time:.2f}s)")
                     else:
-                        st.error(f"❌ No Data Available ({time.time() - start_time:.2f}s)")
+                        st.error(f" No Data Available ({time.time() - start_time:.2f}s)")
                 else:
                     # Vector search with timeout
                     progress_bar.progress(50)
-                    status_text.markdown("🔍 **Performing vector search...**")
+                    status_text.markdown(" **Performing vector search...**")
                     try:
                         # Add timeout to prevent hanging in Streamlit
                         import concurrent.futures
@@ -522,7 +522,7 @@ Answer:"""
                         qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
                         
                         progress_bar.progress(80)
-                        status_text.markdown("🤖 **AI processing...**")
+                        status_text.markdown(" **AI processing...**")
                         from config import LLM_TIMEOUT_SECONDS
                         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
                             fut = ex.submit(qa_chain.run, query)
@@ -540,7 +540,7 @@ Answer:"""
                             st.markdown('</div>', unsafe_allow_html=True)
                             
                             response_cache.set(query, response, "vector")
-                            with st.expander("📊 Performance Details"):
+                            with st.expander(" Performance Details"):
                                 st.markdown("**Source:** Vector search")
                                 st.markdown(f"**Response time:** {rt:.2f} seconds")
                         else:
@@ -555,7 +555,7 @@ Answer:"""
                     
                     # Fallback search
                     progress_bar.progress(90)
-                    status_text.markdown("🔄 **Fallback search...**")
+                    status_text.markdown(" **Fallback search...**")
                     fallback_text = load_txt_documents()
                     
                     if fallback_text:
@@ -574,7 +574,7 @@ Answer:"""
                                 rt = time.time() - start_time
                                 
                                 st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
-                                st.markdown(f'<div class="status-indicator status-info">🔄 Fallback Search • {rt:.2f}s</div>', unsafe_allow_html=True)
+                                st.markdown(f'<div class="status-indicator status-info"> Fallback Search • {rt:.2f}s</div>', unsafe_allow_html=True)
                                 st.markdown("---")
                                 st.markdown(result)
                                 st.markdown('</div>', unsafe_allow_html=True)
@@ -582,7 +582,7 @@ Answer:"""
                                 response_cache.set(query, result, "txt_fallback")
                                 with st.expander("📋 Raw Content"):
                                     st.code(relevant_context)
-                                with st.expander("📊 Performance Details"):
+                                with st.expander(" Performance Details"):
                                     st.markdown("**Source:** Text fallback")
                                     st.markdown(f"**Response time:** {rt:.2f} seconds")
                             except Exception as llm_error:
@@ -600,19 +600,19 @@ Answer:"""
                             progress_bar.progress(100)
                             status_text.empty()
                             rt = time.time() - start_time
-                            st.error(f"❌ No Results Found ({rt:.2f}s)")
+                            st.error(f" No Results Found ({rt:.2f}s)")
                             st.markdown("No relevant information found for your query.")
                     else:
                         progress_bar.progress(100)
                         status_text.empty()
                         rt = time.time() - start_time
-                        st.error(f"❌ No Data Available ({rt:.2f}s)")
+                        st.error(f" No Data Available ({rt:.2f}s)")
                         st.markdown("No data available to process your query.")
 
     except Exception as e:
         progress_bar.progress(100)
         status_text.empty()
-        st.error(f"❌ System Error: {str(e)}")
+        st.error(f" System Error: {str(e)}")
         logger.error(f"Unexpected error: {e}")
 
 # Compact Query History
@@ -620,5 +620,5 @@ if st.session_state.query_history:
     st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
     st.markdown("### 📝 Recent Queries")
     for i, hist_query in enumerate(reversed(st.session_state.query_history[-3:])):
-        st.markdown(f'<div class="query-history">🔍 {hist_query}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="query-history"> {hist_query}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)

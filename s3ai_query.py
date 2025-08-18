@@ -184,6 +184,26 @@ ANSWER BASED ONLY ON PROVIDED CONTEXT:"""
             print("Check vector store availability and LLM readiness.")
     except Exception as e:
         print(f"[Vector Search Failed] {e}")
+        print("[Fallback] Trying fast PDF search...")
+        
+        # Fallback to fast PDF search
+        try:
+            from fast_pdf_search import search_pdfs_directly
+            pdf_results = search_pdfs_directly(query, max_results=3)
+            
+            if "Found" in pdf_results and "matches" in pdf_results:
+                print("\n" + "=" * 80)
+                print("⚡ FAST PDF SEARCH RESULTS")
+                print("=" * 80)
+                print(pdf_results)
+                print("=" * 80)
+                response_cache.set(query, pdf_results, "fast_pdf_search")
+                return
+            else:
+                print("[Fast PDF Search] No results found")
+        except Exception as pdf_error:
+            print(f"[Fast PDF Search Failed] {pdf_error}")
+        
         print("Try rebuilding embeddings: python build_embeddings_all.py")
 
 if __name__ == "__main__":

@@ -60,21 +60,30 @@ if (submit or fast_search) and query:
                     st.write(quick_result)
                     response_cache.set(query, quick_result, "quick_search")
                 
-                # If fast search is enabled or requested, skip vector search
+                # If fast search is enabled or requested, use fast PDF search
                 elif use_fast_search or fast_search:
-                    # Use text fallback directly
-                    fallback_text = load_txt_documents()
-                    if fallback_text:
-                        relevant_context = search_in_fallback_text(query, fallback_text)
-                        if relevant_context:
-                            rt = time.time() - start_time
-                            st.info(f"⚡ Fast Text Search ({rt:.2f}s)")
-                            st.write(relevant_context)
-                            response_cache.set(query, relevant_context, "fast_search")
+                    # Use fast PDF search
+                    try:
+                        from fast_pdf_search import search_pdfs_directly
+                        pdf_results = search_pdfs_directly(query, max_results=5)
+                        rt = time.time() - start_time
+                        st.success(f"⚡ Fast PDF Search ({rt:.2f}s)")
+                        st.markdown(pdf_results)
+                        response_cache.set(query, pdf_results, "fast_pdf_search")
+                    except Exception as e:
+                        # Fallback to text search
+                        fallback_text = load_txt_documents()
+                        if fallback_text:
+                            relevant_context = search_in_fallback_text(query, fallback_text)
+                            if relevant_context:
+                                rt = time.time() - start_time
+                                st.info(f"⚡ Fast Text Search ({rt:.2f}s)")
+                                st.write(relevant_context)
+                                response_cache.set(query, relevant_context, "fast_search")
+                            else:
+                                st.error("No results found in text search")
                         else:
-                            st.error("No results found in text search")
-                    else:
-                        st.error("No documents available for search")
+                            st.error("No documents available for search")
                 
                 # Vector search (only if not using fast search)
                 else:

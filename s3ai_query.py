@@ -1,226 +1,102 @@
-# s3ai_query.py (v2.2.6) - Super Fast CLI
+#!/usr/bin/env python
+"""
+s3ai_query.py - S3 AI Query Interface
+Fast PDF search + AI formatting for vendor documentation
+Searches actual vendor docs + makes them human readable
+"""
 
 import sys
-import os
 import time
-from model_cache import ModelCache
-from response_cache import response_cache
-from bucket_index import bucket_index
-from langchain.chains import RetrievalQA
-from config import VECTOR_SEARCH_K, LLM_TIMEOUT_SECONDS, VECTOR_LOAD_TIMEOUT_SECONDS
-from utils import logger, timing_decorator
+from pathlib import Path
 
-@timing_decorator
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: python s3ai_query.py <your-question>")
-        print("Example: python s3ai_query.py \"show all buckets under dept: engineering\"")
-        return
-    
-    query = " ".join(sys.argv[1:])
-    print(f"Query: {query}")
+def main_query(query):
+    """Fast PDF search + AI formatting for human readability"""
+    print(f"🔍 Smart Search for: '{query}'")
+    print("-" * 50)
     
     start_time = time.time()
     
-    # Check cache first
-    print("[Checking cache...]")
-    cached_response = response_cache.get(query)
-    if cached_response:
-        print(f"[Cache Hit] Found in {time.time() - start_time:.2f} seconds")
-        print("Answer:", cached_response)
-        return
-    
-    # Try quick bucket search
-    print("[Quick bucket search...]")
-    quick_result = bucket_index.quick_search(query)
-    if quick_result:
-        print(f"[Quick Search Hit] Found in {time.time() - start_time:.2f} seconds")
-        print("[Bucket Matches]")
-        print(quick_result)
-        
-        # Use LLM to format the answer
-        try:
-            import concurrent.futures
-            def format_with_llm():
-                llm = ModelCache.get_llm()
-                prompt = f"Based on this bucket information:\n{quick_result}\n\nQuestion: {query}\nAnswer:"
-                return llm(prompt)
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                fut = ex.submit(format_with_llm)
-                answer = fut.result(timeout=LLM_TIMEOUT_SECONDS)
-            print(f"\n[AI Response] Total time: {time.time() - start_time:.2f} seconds")
-            print("Answer:", answer)
-            
-            # Cache the response
-            response_cache.set(query, answer, "quick_search")
-            return
-        except concurrent.futures.TimeoutError:
-            print("[LLM Timeout] Returning raw matches from quick search")
-            print("Answer:")
-            print(quick_result)
-            response_cache.set(query, quick_result, "quick_search_timeout_raw")
-            return
-        except Exception as e:
-            print(f"LLM error: {e}")
-            print("Answer:")
-            print(quick_result)
-            response_cache.set(query, quick_result, "quick_search_raw")
-            return
-    
-    # Vector search
-    print("[Vector search...]")
+    # Step 1: Fast PDF search to get actual vendor content
     try:
-        import concurrent.futures
-        # Load vector store (bypass ModelCache to avoid threading issues)
-        print("[Vector store: loading...]")
-        vector_load_start = time.time()
-        from langchain_community.embeddings import HuggingFaceEmbeddings
-        from langchain_community.vectorstores import FAISS
-        from config import VECTOR_INDEX_PATH, EMBED_MODEL
+        from fast_pdf_search import search_pdfs_directly
+        pdf_results = search_pdfs_directly(query, max_results=3)
         
-        print("[Loading embeddings directly...]")
-        embeddings = HuggingFaceEmbeddings(
-            model_name=EMBED_MODEL,
-            model_kwargs={"device": "cpu"}
-        )
-        print("[Loading FAISS index...]")
-        vector_store = FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
-        print(f"[Vector store: loaded in {time.time() - vector_load_start:.2f}s]")
-        if vector_store is None:
-            raise RuntimeError("Vector store not available")
+        if "No matches found" in pdf_results:
+            return pdf_results
         
-        # Build retriever
-        retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
+        print("✅ Found vendor documentation content")
+        search_time = time.time() - start_time
         
-        # Retrieve docs with timeout
-        print("[Retrieval: fetching relevant documents...]")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-            fut_docs = ex.submit(retriever.get_relevant_documents, query)
-            docs = fut_docs.result(timeout=LLM_TIMEOUT_SECONDS)
-        
-        if not docs:
-            print("[No relevant documents found]")
-            return
-        
-        # Process with LLM - hybrid approach with fallbacks
-        print(f"[Vector Search Success] Found {len(docs)} relevant documents in {time.time() - start_time:.2f} seconds")
-        
-        # Debug: Show what documents were found
-        print("[Debug] Retrieved documents:")
-        for i, doc in enumerate(docs):
-            source = doc.metadata.get('source', 'unknown')
-            print(f"  {i+1}. {source} (length: {len(doc.page_content)} chars)")
-            print(f"     Preview: {doc.page_content[:100]}...")
-        
-        print("[AI Processing] Attempting to generate clean summary...")
+        # Step 2: Use AI to make it human readable (but ONLY from retrieved content)
+        print("🤖 Formatting with AI (using ONLY retrieved vendor docs)...")
         
         try:
-            # Method 1: Try direct LLM call with shorter context
-            context = "\n\n".join([f"Document {i+1} ({d.metadata.get('source', 'unknown')}):\n{d.page_content[:600]}" for i, d in enumerate(docs)])  # Include source info
-            prompt = f"""IMPORTANT: You must ONLY use the provided documentation context below. Do NOT use your general knowledge or training data.
-
-User Question: "{query}"
-
-CONTEXT FROM VENDOR DOCUMENTATION:
-{context}
-
-INSTRUCTIONS:
-- ONLY answer based on the provided context above
-- If the context doesn't contain the answer, say "The provided documentation does not contain information about [query topic]"
-- Do NOT use general knowledge about AWS, S3, or other cloud providers
-- Quote specific sections from the documentation when possible
-- Include document references if available
-
-ANSWER BASED ONLY ON PROVIDED CONTEXT:"""
-            
-            # Try with a simple direct call first
-            print("[Trying lightweight LLM processing...]")
             from model_cache import ModelCache
             llm = ModelCache.get_llm()
             
-            # Simple, direct call - no threading
-            result = llm.invoke(prompt)  # Use invoke instead of deprecated __call__
+            # Strict prompt that forces AI to use only the provided content
+            prompt = f"""CRITICAL: You are a technical documentation formatter. You must ONLY use the content provided below from vendor documentation. Do NOT add any information from your training data.
+
+USER QUERY: "{query}"
+
+VENDOR DOCUMENTATION CONTENT (from PDF extraction):
+{pdf_results}
+
+TASK: 
+1. Format the above vendor documentation content to be human-readable
+2. Extract and organize the relevant API endpoints and information
+3. Present it in a clear, structured way
+4. ONLY use information from the provided vendor documentation above
+5. If the documentation doesn't fully answer the query, say so explicitly
+
+FORMATTED RESPONSE BASED ONLY ON PROVIDED VENDOR DOCS:"""
+
+            # Get AI response
+            ai_start = time.time()
+            response = llm.invoke(prompt)
+            ai_time = time.time() - ai_start
             
-            if result and result.strip():
-                print(f"[Success] AI-processed answer ready in {time.time() - start_time:.2f} seconds")
-                print("\n" + "=" * 80)
-                print("🤖 AI-PROCESSED ANSWER")
-                print("=" * 80)
-                print(result)
-                print("=" * 80)
-                response_cache.set(query, result, "vector_llm")
-                return
-            else:
-                raise ValueError("Empty LLM response")
+            if response and str(response).strip():
+                total_time = time.time() - start_time
                 
-        except Exception as e:
-            print(f"[LLM Failed] {e}")
-            print("[Fallback] Showing enhanced document snippets...")
-            
-            # Fallback: Show smart-formatted snippets
-            from text_formatter import format_document_snippet
-            
-            print("\n" + "=" * 80)
-            print("📋 DOCUMENT SNIPPETS (LLM processing failed)")
-            print("=" * 80)
-            
-            for i, doc in enumerate(docs, 1):
-                formatted_snippet = format_document_snippet(doc, i)
-                print(formatted_snippet)
-            
-            print("💡 TIP: The above contains the answer, but may need manual interpretation due to PDF extraction issues.")
-            print("=" * 80)
-    except concurrent.futures.TimeoutError as e:
-        # Determine which operation timed out based on context
-        current_time = time.time()
-        if 'vector_load_start' in locals() and current_time - vector_load_start > VECTOR_LOAD_TIMEOUT_SECONDS - 5:
-            print(f"[Vector Load Timeout] Vector store loading exceeded {VECTOR_LOAD_TIMEOUT_SECONDS}s timeout.")
-            print("This can happen with large indices. Try:")
-            print("1. Set VECTOR_LOAD_TIMEOUT_SECONDS to a higher value (e.g., 300)")
-            print("2. Check available system memory")
-            print("3. Consider rebuilding with smaller chunks: python build_embeddings_all.py")
-        else:
-            print(f"[Operation Timeout] Operation exceeded the configured timeout.")
-            print("Check vector store availability and LLM readiness.")
+                formatted_response = f"""🎯 Smart Search Results for '{query}'
+📚 Source: Your actual vendor documentation
+🕒 Total time: {total_time:.2f}s (Search: {search_time:.2f}s + AI formatting: {ai_time:.2f}s)
+
+{str(response).strip()}
+
+---
+📋 Raw vendor documentation sources:
+{pdf_results}"""
+                
+                return formatted_response
+            else:
+                return f"❌ AI formatting failed. Raw results:\n\n{pdf_results}"
+        
+        except Exception as ai_error:
+            print(f"⚠️ AI formatting failed: {ai_error}")
+            return f"⚠️ AI formatting failed, showing raw results:\n\n{pdf_results}"
+    
     except Exception as e:
-        print(f"[Vector Search Failed] {e}")
-        print("[Fallback] Trying fast PDF search...")
-        
-        # Fallback to smart search (fast PDF + AI formatting)
-        try:
-            from smart_search import smart_search
-            smart_results = smart_search(query)
-            
-            if smart_results and "Smart Search Results" in smart_results:
-                print("\n" + "=" * 80)
-                print("🎯 SMART SEARCH RESULTS (VENDOR DOCS + AI FORMATTING)")
-                print("=" * 80)
-                print(smart_results)
-                print("=" * 80)
-                response_cache.set(query, smart_results, "smart_search")
-                return
-            else:
-                print("[Smart Search] No results found")
-        except Exception as smart_error:
-            print(f"[Smart Search Failed] {smart_error}")
-            
-            # Final fallback to raw PDF search
-            try:
-                from fast_pdf_search import search_pdfs_directly
-                pdf_results = search_pdfs_directly(query, max_results=3)
-                
-                if "Found" in pdf_results and "matches" in pdf_results:
-                    print("\n" + "=" * 80)
-                    print("⚡ FAST PDF SEARCH RESULTS (RAW)")
-                    print("=" * 80)
-                    print(pdf_results)
-                    print("=" * 80)
-                    response_cache.set(query, pdf_results, "fast_pdf_search")
-                    return
-            except Exception as pdf_error:
-                print(f"[Fast PDF Search Failed] {pdf_error}")
-        
-        print("Try rebuilding embeddings: python build_embeddings_all.py")
+        return f"❌ Smart search failed: {e}"
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python s3ai_query.py <your-question>")
+        print("Example: python s3ai_query.py \"bucketops\"")
+        print("Example: python s3ai_query.py \"how to purge bucket in cloudian\"")
+        return
+    
+    query = " ".join(sys.argv[1:])
+    
+    print("🏢 S3 On-Premise AI Assistant")
+    print("=" * 50)
+    print("🎯 Searching your actual vendor documentation")
+    print("✅ Fast PDF search + AI formatting")
+    print()
+    
+    result = main_query(query)
+    print(result)
 
 if __name__ == "__main__":
     main()

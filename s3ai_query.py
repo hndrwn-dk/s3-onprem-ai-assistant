@@ -186,23 +186,39 @@ ANSWER BASED ONLY ON PROVIDED CONTEXT:"""
         print(f"[Vector Search Failed] {e}")
         print("[Fallback] Trying fast PDF search...")
         
-        # Fallback to fast PDF search
+        # Fallback to smart search (fast PDF + AI formatting)
         try:
-            from fast_pdf_search import search_pdfs_directly
-            pdf_results = search_pdfs_directly(query, max_results=3)
+            from smart_search import smart_search
+            smart_results = smart_search(query)
             
-            if "Found" in pdf_results and "matches" in pdf_results:
+            if smart_results and "Smart Search Results" in smart_results:
                 print("\n" + "=" * 80)
-                print("⚡ FAST PDF SEARCH RESULTS")
+                print("🎯 SMART SEARCH RESULTS (VENDOR DOCS + AI FORMATTING)")
                 print("=" * 80)
-                print(pdf_results)
+                print(smart_results)
                 print("=" * 80)
-                response_cache.set(query, pdf_results, "fast_pdf_search")
+                response_cache.set(query, smart_results, "smart_search")
                 return
             else:
-                print("[Fast PDF Search] No results found")
-        except Exception as pdf_error:
-            print(f"[Fast PDF Search Failed] {pdf_error}")
+                print("[Smart Search] No results found")
+        except Exception as smart_error:
+            print(f"[Smart Search Failed] {smart_error}")
+            
+            # Final fallback to raw PDF search
+            try:
+                from fast_pdf_search import search_pdfs_directly
+                pdf_results = search_pdfs_directly(query, max_results=3)
+                
+                if "Found" in pdf_results and "matches" in pdf_results:
+                    print("\n" + "=" * 80)
+                    print("⚡ FAST PDF SEARCH RESULTS (RAW)")
+                    print("=" * 80)
+                    print(pdf_results)
+                    print("=" * 80)
+                    response_cache.set(query, pdf_results, "fast_pdf_search")
+                    return
+            except Exception as pdf_error:
+                print(f"[Fast PDF Search Failed] {pdf_error}")
         
         print("Try rebuilding embeddings: python build_embeddings_all.py")
 

@@ -104,24 +104,34 @@ def main():
         
         # Process with LLM - hybrid approach with fallbacks
         print(f"[Vector Search Success] Found {len(docs)} relevant documents in {time.time() - start_time:.2f} seconds")
+        
+        # Debug: Show what documents were found
+        print("[Debug] Retrieved documents:")
+        for i, doc in enumerate(docs):
+            source = doc.metadata.get('source', 'unknown')
+            print(f"  {i+1}. {source} (length: {len(doc.page_content)} chars)")
+            print(f"     Preview: {doc.page_content[:100]}...")
+        
         print("[AI Processing] Attempting to generate clean summary...")
         
         try:
             # Method 1: Try direct LLM call with shorter context
-            context = "\n\n".join([d.page_content[:600] for d in docs])  # Shorter context
-            prompt = f"""You are a technical documentation assistant. The user asked: "{query}"
+            context = "\n\n".join([f"Document {i+1} ({d.metadata.get('source', 'unknown')}):\n{d.page_content[:600]}" for i, d in enumerate(docs)])  # Include source info
+            prompt = f"""IMPORTANT: You must ONLY use the provided documentation context below. Do NOT use your general knowledge or training data.
 
-Based on this information from technical documents, provide a clear, step-by-step answer:
+User Question: "{query}"
 
+CONTEXT FROM VENDOR DOCUMENTATION:
 {context}
 
-Please provide:
-1. A direct answer to the question
-2. Step-by-step instructions if applicable  
-3. Any important configuration details
-4. Relevant commands or API calls
+INSTRUCTIONS:
+- ONLY answer based on the provided context above
+- If the context doesn't contain the answer, say "The provided documentation does not contain information about [query topic]"
+- Do NOT use general knowledge about AWS, S3, or other cloud providers
+- Quote specific sections from the documentation when possible
+- Include document references if available
 
-Answer:"""
+ANSWER BASED ONLY ON PROVIDED CONTEXT:"""
             
             # Try with a simple direct call first
             print("[Trying lightweight LLM processing...]")

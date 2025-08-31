@@ -546,68 +546,68 @@ Answer:"""
                         else:
                             raise ValueError("Empty response from vector search")
                         
-                except Exception as e:
-                    if "timed out" in str(e).lower():
-                        logger.warning(f"Vector search timed out: {e}")
-                        st.warning("⚠️ Vector search is taking too long (>30s). Using faster text search instead.")
-                    else:
-                        logger.warning(f"Vector search failed: {e}")
-                    
-                    # Fallback search
-                    progress_bar.progress(90)
-                    status_text.markdown(" **Fallback search...**")
-                    fallback_text = load_txt_documents()
-                    
-                    if fallback_text:
-                        relevant_context = search_in_fallback_text(query, fallback_text)
-                        if relevant_context:
-                            llm = ModelCache.get_llm()
-                            prompt = f"""Based on this information:
+                    except Exception as e:
+                        if "timed out" in str(e).lower():
+                            logger.warning(f"Vector search timed out: {e}")
+                            st.warning("⚠️ Vector search is taking too long (>30s). Using faster text search instead.")
+                        else:
+                            logger.warning(f"Vector search failed: {e}")
+                        
+                        # Fallback search
+                        progress_bar.progress(90)
+                        status_text.markdown(" **Fallback search...**")
+                        fallback_text = load_txt_documents()
+                        
+                        if fallback_text:
+                            relevant_context = search_in_fallback_text(query, fallback_text)
+                            if relevant_context:
+                                llm = ModelCache.get_llm()
+                                prompt = f"""Based on this information:
 {relevant_context}
 
 Question: {query}
 Answer:"""
-                            try:
-                                result = llm(prompt)
-                                progress_bar.progress(100)
-                                status_text.empty()
-                                rt = time.time() - start_time
-                                
-                                st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
-                                st.markdown(f'<div class="status-indicator status-info"> Fallback Search • {rt:.2f}s</div>', unsafe_allow_html=True)
-                                st.markdown("---")
-                                st.markdown(result)
-                                st.markdown('</div>', unsafe_allow_html=True)
-                                
-                                response_cache.set(query, result, "txt_fallback")
-                                with st.expander("📋 Raw Content"):
+                                try:
+                                    result = llm(prompt)
+                                    progress_bar.progress(100)
+                                    status_text.empty()
+                                    rt = time.time() - start_time
+                                    
+                                    st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+                                    st.markdown(f'<div class="status-indicator status-info"> Fallback Search • {rt:.2f}s</div>', unsafe_allow_html=True)
+                                    st.markdown("---")
+                                    st.markdown(result)
+                                    st.markdown('</div>', unsafe_allow_html=True)
+                                    
+                                    response_cache.set(query, result, "txt_fallback")
+                                    with st.expander("📋 Raw Content"):
+                                        st.code(relevant_context)
+                                    with st.expander(" Performance Details"):
+                                        st.markdown("**Source:** Text fallback")
+                                        st.markdown(f"**Response time:** {rt:.2f} seconds")
+                                except Exception as llm_error:
+                                    progress_bar.progress(100)
+                                    status_text.empty()
+                                    rt = time.time() - start_time
+                                    
+                                    st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+                                    st.markdown(f'<div class="status-indicator status-warning">⚠️ Raw Content • {rt:.2f}s</div>', unsafe_allow_html=True)
+                                    st.markdown("---")
                                     st.code(relevant_context)
-                                with st.expander(" Performance Details"):
-                                    st.markdown("**Source:** Text fallback")
-                                    st.markdown(f"**Response time:** {rt:.2f} seconds")
-                            except Exception as llm_error:
+                                    st.markdown('</div>', unsafe_allow_html=True)
+                                    logger.error(f"LLM error in fallback: {llm_error}")
+                            else:
                                 progress_bar.progress(100)
                                 status_text.empty()
                                 rt = time.time() - start_time
-                                
-                                st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
-                                st.markdown(f'<div class="status-indicator status-warning">⚠️ Raw Content • {rt:.2f}s</div>', unsafe_allow_html=True)
-                                st.markdown("---")
-                                st.code(relevant_context)
-                                st.markdown('</div>', unsafe_allow_html=True)
-                                logger.error(f"LLM error in fallback: {llm_error}")
+                                st.error(f" No Results Found ({rt:.2f}s)")
+                                st.markdown("No relevant information found for your query.")
                         else:
                             progress_bar.progress(100)
                             status_text.empty()
                             rt = time.time() - start_time
-                            st.error(f" No Results Found ({rt:.2f}s)")
-                            st.markdown("No relevant information found for your query.")
-                    else:
-                        progress_bar.progress(100)
-                        status_text.empty()
-                        rt = time.time() - start_time
-                        st.error(f" No Data Available ({rt:.2f}s)")
-                        st.markdown("No data available to process your query.")
+                            st.error(f" No Data Available ({rt:.2f}s)")
+                            st.markdown("No data available to process your query.")
 
     except Exception as e:
         progress_bar.progress(100)

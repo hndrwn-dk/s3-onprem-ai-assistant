@@ -3,7 +3,12 @@
 import os
 import re
 from collections import defaultdict
-from config import FLATTENED_TXT_PATH, DOCS_PATH, QUICK_SEARCH_MAX_RESULTS, QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK
+from config import (
+    FLATTENED_TXT_PATH,
+    DOCS_PATH,
+    QUICK_SEARCH_MAX_RESULTS,
+    QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK,
+)
 from utils import logger
 
 
@@ -33,7 +38,7 @@ class BucketIndex:
         name_pattern = re.compile(r'(?:bucket|name)\s*:?\s*"?([a-zA-Z0-9_\-\.]+)"?')
 
         try:
-            with open(txt_file, 'r', encoding='utf-8') as f:
+            with open(txt_file, "r", encoding="utf-8") as f:
                 for line_num, line in enumerate(f, 1):
                     line = line.strip()
                     if not line:
@@ -78,9 +83,9 @@ class BucketIndex:
     def _is_bucket_query(self, query_lower: str) -> bool:
         """Heuristic: only treat as bucket query if explicit bucket metadata hints exist (requires colon)."""
         return (
-            re.search(r'\bdept(?:artment)?\s*:', query_lower) is not None
-            or re.search(r'\blabel\s*:', query_lower) is not None
-            or re.search(r'\bbucket(?:\s*name)?\s*:', query_lower) is not None
+            re.search(r"\bdept(?:artment)?\s*:", query_lower) is not None
+            or re.search(r"\blabel\s*:", query_lower) is not None
+            or re.search(r"\bbucket(?:\s*name)?\s*:", query_lower) is not None
         )
 
     def quick_search(self, query: str) -> str:
@@ -113,7 +118,7 @@ class BucketIndex:
 
         # Keyword fallback only if explicitly enabled and we already determined it's a bucket query
         if not results and QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK:
-            keywords = re.findall(r'\b([\w\-:\.]+)\b', query_lower)
+            keywords = re.findall(r"\b([\w\-:\.]+)\b", query_lower)
             for keyword in keywords:
                 if len(keyword) > 2:  # Skip short words
                     for line_num, line in self.all_lines:
@@ -127,7 +132,7 @@ class BucketIndex:
         if results:
             # Remove duplicates and format
             unique_results = list(dict.fromkeys(results))[:QUICK_SEARCH_MAX_RESULTS]
-            return '\n'.join([f"Line {num}: {line}" for num, line in unique_results])
+            return "\n".join([f"Line {num}: {line}" for num, line in unique_results])
 
         return ""
 

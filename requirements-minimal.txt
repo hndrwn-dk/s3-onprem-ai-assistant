@@ -1,0 +1,15 @@
+# Minimal requirements for CI testing
+# Only includes dependencies needed for basic import checks
+
+# Core LangChain dependencies (required by utils.py)
+langchain-community==0.0.13
+langchain-core==0.1.12
+
+# Required by langchain-community
+numpy==1.24.3
+requests==2.31.0
+pydantic==2.5.2
+pyyaml==6.0.1
+
+# Development and linting tools (used by CI)
+black==23.12.1

@@ -57,7 +57,10 @@ async def startup_event():
             from langchain_community.embeddings import HuggingFaceEmbeddings
             from langchain_community.vectorstores import FAISS
             from config import VECTOR_INDEX_PATH, EMBED_MODEL
-            embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": "cpu"})
+
+            embeddings = HuggingFaceEmbeddings(
+                model_name=EMBED_MODEL, model_kwargs={"device": "cpu"}
+            )
             FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
             logger.info("Vector store preloaded successfully")
         except Exception as e:
@@ -106,6 +109,7 @@ Answer:"""
             try:
                 import concurrent.futures
                 from config import LLM_TIMEOUT_SECONDS
+
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
                     fut = ex.submit(llm, prompt)
                     answer = fut.result(timeout=LLM_TIMEOUT_SECONDS)
@@ -136,13 +140,18 @@ Answer:"""
             from langchain_community.embeddings import HuggingFaceEmbeddings
             from langchain_community.vectorstores import FAISS
             from config import VECTOR_INDEX_PATH, EMBED_MODEL
-            embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": "cpu"})
+
+            embeddings = HuggingFaceEmbeddings(
+                model_name=EMBED_MODEL, model_kwargs={"device": "cpu"}
+            )
             vector_store = FAISS.load_local(VECTOR_INDEX_PATH, embeddings)
             if vector_store is None:
-                raise RuntimeError("Vector store not available - please run 'python build_embeddings_all.py' after uploading documents")
+                raise RuntimeError(
+                    "Vector store not available - please run 'python build_embeddings_all.py' after uploading documents"
+                )
             retriever = vector_store.as_retriever(search_kwargs={"k": VECTOR_SEARCH_K})
             docs = retriever.get_relevant_documents(question)
-            
+
             if docs:
                 # Try LLM processing with fallback
                 try:
@@ -161,10 +170,10 @@ Please provide:
 4. Relevant commands or API calls
 
 Answer:"""
-                    
+
                     llm = ModelCache.get_llm()
                     result = llm.invoke(prompt)
-                    
+
                     if result and result.strip():
                         response_cache.set(question, result, "vector_llm")
                         return QueryResponse(
@@ -174,24 +183,29 @@ Answer:"""
                         )
                     else:
                         raise ValueError("Empty LLM response")
-                        
+
                 except Exception as e:
-                    logger.warning(f"LLM processing failed: {e}, falling back to snippets")
-                    
+                    logger.warning(
+                        f"LLM processing failed: {e}, falling back to snippets"
+                    )
+
                     # Fallback: Format document snippets for better readability
                     from text_formatter import smart_format_text
+
                     snippets = []
                     for i, doc in enumerate(docs, 1):
                         src = doc.metadata.get("source", "unknown")
-                        filename = src.split('\\')[-1].split('/')[-1]
+                        filename = src.split("\\")[-1].split("/")[-1]
                         content = smart_format_text(doc.page_content, max_length=600)
-                        snippets.append(f" Document {i}: {filename}\n{'-' * 60}\n{content}...\n")
-                    
+                        snippets.append(
+                            f" Document {i}: {filename}\n{'-' * 60}\n{content}...\n"
+                        )
+
                     result = "\n".join(snippets)
                     response_cache.set(question, result, "vector_snippets_fallback")
                     return QueryResponse(
                         answer=f"Found {len(docs)} relevant documents (LLM processing failed):\n\n{result}",
-                        source="vector_snippets_fallback", 
+                        source="vector_snippets_fallback",
                         response_time=time.time() - start_time,
                     )
             else:

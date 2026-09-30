@@ -26,6 +26,13 @@ venv/
 env/
 ENV/
 
+# Secrets (never commit keys)
+.env
+.env.*
+!.env.example
+*.secrets.json
+.streamlit/secrets.toml
+
 # Application specific
 cache/
 s3_all_docs/

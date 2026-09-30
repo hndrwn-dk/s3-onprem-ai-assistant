@@ -12,17 +12,9 @@ def clear_all_caches():
         from response_cache import response_cache
 
         # Clear response cache
-        cache_size_before = (
-            len(response_cache._cache) if hasattr(response_cache, "_cache") else 0
-        )
-        response_cache.clear_expired()
-
-        # Also clear all entries (not just expired)
-        if hasattr(response_cache, "_cache"):
-            response_cache._cache.clear()
-            print(f"Cleared {cache_size_before} cached responses")
-        else:
-            print("Response cache cleared")
+        stats = response_cache.get_stats()
+        response_cache.clear_all()
+        print(f"Cleared {stats.get('entries', 0)} cached responses")
 
         # Clear model cache
         try:

@@ -1,3 +1,32 @@
+x-app-environment: &app-environment
+  MODEL: ${MODEL:-phi3:mini}
+  LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+  API_KEY: ${API_KEY:-}
+  CORS_ORIGINS: ${CORS_ORIGINS:-*}
+  VECTOR_SEARCH_K: ${VECTOR_SEARCH_K:-3}
+  CACHE_TTL_HOURS: ${CACHE_TTL_HOURS:-24}
+  ALLOW_DANGEROUS_DESERIALIZATION: ${ALLOW_DANGEROUS_DESERIALIZATION:-true}
+  OLLAMA_HOST: http://ollama:11434
+  QUICK_SEARCH_MAX_RESULTS: ${QUICK_SEARCH_MAX_RESULTS:-10}
+  QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK: ${QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK:-true}
+  EMBED_DEVICE: ${EMBED_DEVICE:-cpu}
+  EMBED_BATCH_SIZE: ${EMBED_BATCH_SIZE:-64}
+  SEARCH_MODE: ${SEARCH_MODE:-auto}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+  OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+  AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
+  AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
+  AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-}
+  AZURE_OPENAI_API_VERSION: ${AZURE_OPENAI_API_VERSION:-2024-02-15-preview}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-3-5-haiku-20241022}
+  GROQ_API_KEY: ${GROQ_API_KEY:-}
+  GROQ_MODEL: ${GROQ_MODEL:-llama-3.1-8b-instant}
+  OPENAI_COMPAT_API_KEY: ${OPENAI_COMPAT_API_KEY:-}
+  OPENAI_COMPAT_BASE_URL: ${OPENAI_COMPAT_BASE_URL:-}
+  OPENAI_COMPAT_MODEL: ${OPENAI_COMPAT_MODEL:-}
+
 services:
   ollama:
     image: ollama/ollama:latest
@@ -14,17 +43,7 @@ services:
     build: .
     restart: unless-stopped
     environment:
-      - MODEL=${MODEL:-phi3:mini}
-      - API_KEY=${API_KEY:-}
-      - CORS_ORIGINS=${CORS_ORIGINS:-*}
-      - VECTOR_SEARCH_K=${VECTOR_SEARCH_K:-3}
-      - CACHE_TTL_HOURS=${CACHE_TTL_HOURS:-24}
-      - ALLOW_DANGEROUS_DESERIALIZATION=${ALLOW_DANGEROUS_DESERIALIZATION:-true}
-      - OLLAMA_HOST=http://ollama:11434
-      - QUICK_SEARCH_MAX_RESULTS=${QUICK_SEARCH_MAX_RESULTS:-10}
-      - QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK=${QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK:-true}
-      - EMBED_DEVICE=${EMBED_DEVICE:-cpu}
-      - EMBED_BATCH_SIZE=${EMBED_BATCH_SIZE:-64}
+      <<: *app-environment
     ports:
       - "8000:8000"
     volumes:
@@ -40,11 +59,7 @@ services:
     command: streamlit run streamlit_ui.py --server.address 0.0.0.0 --server.port 8501
     restart: unless-stopped
     environment:
-      - OLLAMA_HOST=http://ollama:11434
-      - QUICK_SEARCH_MAX_RESULTS=${QUICK_SEARCH_MAX_RESULTS:-10}
-      - QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK=${QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK:-true}
-      - EMBED_DEVICE=${EMBED_DEVICE:-cpu}
-      - EMBED_BATCH_SIZE=${EMBED_BATCH_SIZE:-64}
+      <<: *app-environment
     ports:
       - "8501:8501"
     volumes:
@@ -60,9 +75,7 @@ services:
     build: .
     entrypoint: ["python", "s3ai_query.py"]
     environment:
-      - OLLAMA_HOST=http://ollama:11434
-      - QUICK_SEARCH_MAX_RESULTS=${QUICK_SEARCH_MAX_RESULTS:-10}
-      - QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK=${QUICK_SEARCH_ENABLE_KEYWORD_FALLBACK:-true}
+      <<: *app-environment
     volumes:
       - ./s3_all_docs:/app/s3_all_docs
       - ./docs:/app/docs

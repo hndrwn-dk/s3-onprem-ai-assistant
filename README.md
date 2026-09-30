@@ -139,16 +139,38 @@ python build_embeddings_all.py
 ### 5️⃣ Start Querying!
 
 ```bash
-# Ultra-fast CLI (recommended for speed)
+# Unified CLI (same engine as API and web UI)
 python s3ai_query.py "show all buckets under dept: engineering"
+python s3ai_query.py --mode fast_text "how to purge a bucket"
 
-# Web UI with progress indicators
+# Chat UI
 streamlit run streamlit_ui.py
 
 # REST API
 python api.py
 # Visit: http://localhost:8000/docs
 ```
+
+---
+
+## Hybrid LLM providers
+
+Ollama remains the default so the assistant still runs fully offline. Optional cloud providers are selected with `LLM_PROVIDER` or the Settings sidebar. Copy [`.env.example`](.env.example) to `.env` and fill keys locally. **Never commit API keys.**
+
+| Provider | `LLM_PROVIDER` | Required env |
+|----------|----------------|--------------|
+| Ollama (default) | `ollama` | `OLLAMA_HOST` (optional) |
+| OpenAI | `openai` | `OPENAI_API_KEY`, `OPENAI_MODEL` |
+| Azure OpenAI | `azure` | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT` |
+| Anthropic | `anthropic` | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` |
+| Groq | `groq` | `GROQ_API_KEY`, `GROQ_MODEL` |
+| Compatible endpoint | `openai_compat` | `OPENAI_COMPAT_BASE_URL`, `OPENAI_COMPAT_API_KEY`, `OPENAI_COMPAT_MODEL` |
+
+The web UI can override provider, model, and key for the current session only. Keys typed in the UI are not written to disk.
+
+Search modes: `auto` (cache, bucket metadata, hybrid retrieve), `bucket`, `vector`, `fast_text`.
+
+---
 
 ---
 
@@ -202,19 +224,29 @@ Query → Cache Check → Quick Bucket Search → Vector Search → Text Fallbac
 ### REST API Examples
 
 ```bash
-# Health check
+# Health check (provider status, no secrets)
 curl -X GET "http://localhost:8000/health"
 
-# Query with performance metrics
+# Query with citations
 curl -X POST "http://localhost:8000/ask" \
   -H "Content-Type: application/json" \
-  -d '{"question": "show all buckets under dept: engineering"}'
+  -d '{"question": "show all buckets under dept: engineering", "search_mode": "auto"}'
 
-# Response includes timing
+# Streaming (SSE)
+curl -N -X POST "http://localhost:8000/ask/stream" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How do I purge a versioned bucket?"}'
+```
+
+Example JSON response:
+
+```json
 {
   "answer": "Here are the buckets under dept: engineering...",
   "source": "quick_search",
-  "response_time": 0.23
+  "response_time": 0.23,
+  "citations": [],
+  "follow_ups": []
 }
 ```
 
@@ -335,15 +367,16 @@ We welcome contributions! Areas of interest:
 
 ---
 
-## 🔒 Security
+## Security
 - Set an API key by exporting `API_KEY` or in `docker-compose.yml`. Protected endpoints require header `X-API-Key: <value>`.
+- LLM provider keys belong in `.env` (see `.env.example`) or the Streamlit Settings panel. `.env` is gitignored.
 - Configure allowed CORS origins via `CORS_ORIGINS` (comma-separated), default `*`.
 - Note: FAISS loading uses a configurable flag `ALLOW_DANGEROUS_DESERIALIZATION` (default true). Keep indices in a trusted location.
 
-## 🐳 Docker Quickstart
+## Docker Quickstart
 ```bash
-# Build and run API + Ollama
-docker compose up --build -d
+# Build and run API + Ollama + Streamlit
+docker compose -f deployment/docker-compose.yml up --build -d
 
 # Pull model in Ollama container (first run)
 docker exec -it $(docker ps -q -f name=ollama) ollama pull phi3:mini
@@ -352,6 +385,9 @@ docker exec -it $(docker ps -q -f name=ollama) ollama pull phi3:mini
 curl -H "X-API-Key: $API_KEY" -X POST localhost:8000/ask \
   -H 'Content-Type: application/json' \
   -d '{"question": "show all buckets under dept: engineering"}'
+
+# Chat UI
+# http://localhost:8501
 ```
 
 ---

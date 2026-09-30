@@ -15,6 +15,8 @@ class ResponseCache:
         self.ttl = timedelta(hours=ttl_hours)
         os.makedirs(cache_dir, exist_ok=True)
         self._lock = threading.Lock()
+        self._hits = 0
+        self._misses = 0
 
     def _get_cache_key(self, query: str) -> str:
         """Generate cache key from query"""
@@ -32,9 +34,11 @@ class ResponseCache:
                         data = json.load(f)
                 cached_time = datetime.fromisoformat(data["timestamp"])
                 if datetime.now() - cached_time < self.ttl:
+                    self._hits += 1
                     return data["response"]
             except Exception:
                 pass  # Ignore cache errors
+        self._misses += 1
         return None
 
     def set(self, query: str, response: str, source: str = "unknown"):
@@ -99,6 +103,22 @@ class ResponseCache:
                         os.remove(file_path)
                 except Exception:
                     pass
+
+    def get_stats(self) -> dict:
+        """Return in-memory hit/miss counters plus on-disk entry count."""
+        entries = 0
+        if os.path.exists(self.cache_dir):
+            entries = len(
+                [name for name in os.listdir(self.cache_dir) if name.endswith(".json")]
+            )
+        total = self._hits + self._misses
+        hit_rate = (self._hits / total) if total else 0.0
+        return {
+            "hits": self._hits,
+            "misses": self._misses,
+            "entries": entries,
+            "hit_rate": hit_rate,
+        }
 
 
 # Global cache instance

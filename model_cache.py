@@ -2,20 +2,14 @@
 
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_community.llms import Ollama
 from config import (
     VECTOR_INDEX_PATH,
     EMBED_MODEL,
-    MODEL,
-    TEMPERATURE,
-    TOP_K,
-    TOP_P,
     ALLOW_DANGEROUS_DESERIALIZATION,
 )
 import time
 from utils import logger
 import threading
-import os
 
 
 class ModelCache:
@@ -26,24 +20,26 @@ class ModelCache:
     _lock = threading.Lock()
 
     @classmethod
-    def get_llm(cls):
-        if cls._llm is None:
-            with cls._lock:
-                if cls._llm is None:
-                    start_time = time.time()
-                    base_url = os.getenv("OLLAMA_HOST") or os.getenv("OLLAMA_BASE_URL")
-                    kwargs = dict(
-                        model=MODEL,
-                        temperature=TEMPERATURE,
-                        top_k=TOP_K,
-                        top_p=TOP_P,
-                    )
-                    if base_url:
-                        kwargs["base_url"] = base_url
-                    cls._llm = Ollama(**kwargs)
-                    cls._load_times["llm"] = time.time() - start_time
-                    logger.info(f"LLM loaded in {cls._load_times['llm']:.2f} seconds")
-        return cls._llm
+    def get_llm(cls, overrides=None):
+        from llm_factory import get_llm_client
+
+        start_time = time.time()
+        client = get_llm_client(overrides)
+        if "llm" not in cls._load_times:
+            cls._load_times["llm"] = time.time() - start_time
+            logger.info("LLM client ready in %.2f seconds", cls._load_times["llm"])
+        cls._llm = client
+        return client
+
+    @classmethod
+    def reset_llm(cls):
+        from llm_factory import reset_clients
+
+        with cls._lock:
+            cls._llm = None
+            cls._load_times.pop("llm", None)
+        reset_clients()
+        logger.info("LLM cache reset")
 
     @classmethod
     def get_embeddings(cls):

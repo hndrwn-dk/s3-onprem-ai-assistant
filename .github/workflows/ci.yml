@@ -35,8 +35,14 @@ jobs:
           python - <<'PY'
           import importlib
           for module in [
-              'response_cache', 'bucket_index', 'utils', 'config'
+              'response_cache', 'bucket_index', 'utils', 'config',
+              'llm_factory', 'conversation', 'text_formatter', 'prompts'
           ]:
               importlib.import_module(module)
           print('Basic imports OK')
           PY
+
+      - name: Unit tests
+        run: |
+          pip install pytest
+          pytest -q

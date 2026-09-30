@@ -23,12 +23,12 @@ class FastSearch:
         if self.loaded:
             return
 
-        print("🔍 Loading documents for fast search...")
+        print("Loading documents for fast search...")
         start_time = time.time()
 
         docs_path = Path("docs")
         if not docs_path.exists():
-            print("❌ No docs directory found")
+            print("No docs directory found")
             return
 
         # Load text files quickly
@@ -42,7 +42,7 @@ class FastSearch:
                         "type": "txt",
                     }
             except Exception as e:
-                print(f"⚠️ Failed to load {file_path}: {e}")
+                print(f"Failed to load {file_path}: {e}")
 
         # Load markdown files
         for file_path in docs_path.glob("*.md"):
@@ -55,13 +55,11 @@ class FastSearch:
                         "type": "md",
                     }
             except Exception as e:
-                print(f"⚠️ Failed to load {file_path}: {e}")
+                print(f"Failed to load {file_path}: {e}")
 
         self.loaded = True
         load_time = time.time() - start_time
-        print(
-            f"✅ Fast search loaded {len(self.documents)} documents in {load_time:.2f}s"
-        )
+        print(f"Fast search loaded {len(self.documents)} documents in {load_time:.2f}s")
 
     def search(self, query: str, max_results: int = 5) -> List[Dict]:
         """Fast text-based search"""

@@ -6,8 +6,76 @@ Searches your actual Cloudian PDFs instantly
 
 import sys
 import time
-import re
 from pathlib import Path
+
+
+def _extract_page_hits(reader, pdf_file, query, max_results, page_limit=None):
+    results = []
+    pages = reader.pages[:page_limit] if page_limit else reader.pages
+    query_lower = query.lower()
+    for page_num, page in enumerate(pages):
+        page_text = page.extract_text() or ""
+        if query_lower in page_text.lower():
+            query_pos = page_text.lower().find(query_lower)
+            start = max(0, query_pos - 200)
+            end = min(len(page_text), query_pos + 300)
+            results.append(
+                {
+                    "file": pdf_file.name,
+                    "page": page_num + 1,
+                    "context": page_text[start:end],
+                    "relevance": page_text.lower().count(query_lower),
+                }
+            )
+            if len(results) >= max_results:
+                break
+    return results
+
+
+def collect_pdf_matches(query, max_results=5, verbose=False):
+    """Return structured PDF hits without requiring vector search."""
+    docs_path = Path("docs")
+    if not docs_path.exists():
+        return []
+
+    pdf_files = list(docs_path.glob("*.pdf"))
+    results = []
+    for pdf_file in pdf_files:
+        if verbose:
+            print(f"Checking: {pdf_file.name}")
+        try:
+            try:
+                import PyPDF2
+
+                with open(pdf_file, "rb") as handle:
+                    reader = PyPDF2.PdfReader(handle)
+                    results.extend(
+                        _extract_page_hits(
+                            reader, pdf_file, query, max_results - len(results)
+                        )
+                    )
+            except ImportError:
+                import pypdf
+
+                with open(pdf_file, "rb") as handle:
+                    reader = pypdf.PdfReader(handle)
+                    results.extend(
+                        _extract_page_hits(
+                            reader,
+                            pdf_file,
+                            query,
+                            max_results - len(results),
+                            page_limit=20,
+                        )
+                    )
+        except Exception as exc:
+            if verbose:
+                print(f"  Error reading {pdf_file.name}: {exc}")
+        if len(results) >= max_results:
+            break
+
+    results.sort(key=lambda item: item["relevance"], reverse=True)
+    return results[:max_results]
 
 
 def search_pdfs_directly(query, max_results=5):
@@ -16,82 +84,13 @@ def search_pdfs_directly(query, max_results=5):
     print("-" * 50)
 
     start_time = time.time()
-    results = []
-
     docs_path = Path("docs")
     if not docs_path.exists():
         return "docs/ folder not found"
 
-    # Search PDF files
     pdf_files = list(docs_path.glob("*.pdf"))
     print(f"Searching {len(pdf_files)} PDF files...")
-
-    for pdf_file in pdf_files:
-        print(f"Checking: {pdf_file.name}")
-        try:
-            # Try PyPDF2 first
-            try:
-                import PyPDF2
-
-                with open(pdf_file, "rb") as f:
-                    reader = PyPDF2.PdfReader(f)
-
-                    for page_num, page in enumerate(reader.pages):
-                        page_text = page.extract_text()
-
-                        # Search for query terms
-                        if query.lower() in page_text.lower():
-                            # Extract relevant context
-                            query_pos = page_text.lower().find(query.lower())
-                            start = max(0, query_pos - 200)
-                            end = min(len(page_text), query_pos + 300)
-                            context = page_text[start:end]
-
-                            results.append(
-                                {
-                                    "file": pdf_file.name,
-                                    "page": page_num + 1,
-                                    "context": context,
-                                    "relevance": page_text.lower().count(query.lower()),
-                                }
-                            )
-
-                            if len(results) >= max_results:
-                                break
-
-            except ImportError:
-                print("  PyPDF2 not available, trying pypdf...")
-                import pypdf
-
-                with open(pdf_file, "rb") as f:
-                    reader = pypdf.PdfReader(f)
-
-                    for page_num, page in enumerate(
-                        reader.pages[:20]
-                    ):  # First 20 pages
-                        page_text = page.extract_text()
-
-                        if query.lower() in page_text.lower():
-                            query_pos = page_text.lower().find(query.lower())
-                            start = max(0, query_pos - 200)
-                            end = min(len(page_text), query_pos + 300)
-                            context = page_text[start:end]
-
-                            results.append(
-                                {
-                                    "file": pdf_file.name,
-                                    "page": page_num + 1,
-                                    "context": context,
-                                    "relevance": page_text.lower().count(query.lower()),
-                                }
-                            )
-
-                            if len(results) >= max_results:
-                                break
-
-        except Exception as e:
-            print(f"  Error reading {pdf_file.name}: {e}")
-
+    results = collect_pdf_matches(query, max_results=max_results, verbose=True)
     search_time = time.time() - start_time
 
     if not results:
@@ -103,7 +102,7 @@ def search_pdfs_directly(query, max_results=5):
     # Format response
     response_parts = [
         f"Found {len(results)} matches for '{query}' in your vendor documentation:",
-        f"🕒 Search completed in {search_time:.2f} seconds",
+        f"Search completed in {search_time:.2f} seconds",
         "",
     ]
 
@@ -154,7 +153,7 @@ def main():
     print("S3 On-Premise AI Assistant - Fast PDF Search")
     print("=" * 60)
     print("This searches your ACTUAL vendor documentation")
-    print("⚡ No vector loading delays - instant results")
+    print("No vector loading delays - instant results")
     print()
 
     # Search PDFs directly
